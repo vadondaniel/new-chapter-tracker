@@ -137,6 +137,7 @@ def add_link():
 
 if __name__ == "__main__":
     schedule_updates()
-    wait_for_chromedriver()
-    # force_update_job()  # Force a full update when the app starts
+    # wait_for_chromedriver()
+    force_update_job(LINKS_FILE, DATA_FILE, "main")  # Force a full update when the app starts
+    force_update_job(MANGA_LINKS_FILE, MANGA_DATA_FILE, "manga")
     app.run(debug=False, port=555)
