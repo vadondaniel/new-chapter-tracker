@@ -97,8 +97,8 @@ def scrape_website(url, previous_data, force_update=False):
             if force_update or url not in previous_data or (datetime.datetime.now() - datetime.datetime.strptime(previous_data[url]["timestamp"], "%Y/%m/%d")).days > 2:
                 url_parts = url.split('/')
                 if len(url_parts) > 4:
-                    url = f"https://www.royalroad.com/fiction/syndication/{url_parts[4]}"
-                response = requests.get(url).content
+                    api_url = f"https://www.royalroad.com/fiction/syndication/{url_parts[4]}"
+                response = requests.get(api_url).content
                 soup = BeautifulSoup(response, "xml")
                 
                 # Extract the channel title
@@ -156,7 +156,11 @@ def scrape_website(url, previous_data, force_update=False):
             timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
         
         end_time = time.time()
-        logging.info(f"Scraping {url} took {end_time - start_time} seconds")
+        elapsed = end_time - start_time
+        link_name = previous_data[url]['name'] if url in previous_data and 'name' in previous_data[url] else 'New Link'
+        logging.info(
+            f"Scraping done in {elapsed:.2f} seconds for URL: {url} ({link_name})"
+        )
         return latest_chapter, timestamp
     except Exception as e:
         logging.error(f"Error scraping {url}: {e}")
@@ -174,7 +178,7 @@ def scrape_all_links(links, previous_data, force_update=False):
             try:
                 scraped_text, timestamp = future.result()
                 new_data[link["url"]] = {"name": link["name"], "last_found": scraped_text, "timestamp": timestamp}
-                logging.info(f"Scraped {link['url']}: {new_data[link['url']]}")
+                # logging.info(f"Scraped {link['url']}: {new_data[link['url']]}")
                 socketio.emit('update_progress', {'current': i, 'total': total_links})
             except Exception as e:
                 logging.error(f"Error scraping {link['url']}: {e}")
