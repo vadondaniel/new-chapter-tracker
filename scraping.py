@@ -76,41 +76,23 @@ def scrape_website(url, previous_data, force_update=False):
         
         if "ichijin-plus.com" in url:
             if force_update or url not in previous_data or (datetime.datetime.now() - datetime.datetime.strptime(previous_data[url]["timestamp"], "%Y/%m/%d")).days > 10:
-                # Use Selenium to handle the confirmation page
-                options = webdriver.ChromeOptions()
-                options.add_argument('--headless')
-                options.add_argument('--no-sandbox')
-                options.add_argument('--disable-dev-shm-usage')
-                driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+                response = requests.get(url).content
+                soup = BeautifulSoup(response, "html.parser")
                 
-                driver.get("https://ichijin-plus.com")  # Open the domain first so Selenium can set the cookie
-                driver.add_cookie({
-                    'name': 'show_sensitive_content',
-                    'value': '1',
-                    'domain': '.ichijin-plus.com',
-                    'path': '/',
-                })
-
-                driver.get(url)
-                soup = BeautifulSoup(driver.page_source, "html.parser")
-                driver.quit()
-                
-                latest_chapter_div = soup.find("span", class_="sc-9382ab04-6")
-                updated_date_div = soup.find("span", class_="sc-9382ab04-4")
-                if latest_chapter_div and updated_date_div:
-                    chapter_text = latest_chapter_div.get_text(strip=True)
-                    updated_date = updated_date_div.get_text(strip=True)
-                    if "日前" in updated_date:
-                        days_ago = int(updated_date.replace("日前", "").strip())
-                        timestamp = (datetime.datetime.now() - datetime.timedelta(days=days_ago)).strftime("%Y/%m/%d")
-                    elif "時間前" in updated_date:
-                        hours_ago = int(updated_date.replace("時間前", "").strip())
-                        timestamp = (datetime.datetime.now() - datetime.timedelta(hours=hours_ago)).strftime("%Y/%m/%d")
-                    else:
-                        updated_date_parts = updated_date.split('/')
-                        updated_date_padded = '/'.join(part.zfill(2) for part in updated_date_parts)
-                        timestamp = datetime.datetime.strptime(updated_date_padded, "%Y/%m/%d").strftime("%Y/%m/%d") if updated_date else datetime.datetime.now().strftime("%Y/%m/%d")
-                    latest_chapter = f"{chapter_text}"
+                # Try to extract from embedded JSON if normal method fails
+                script = soup.find("script", id="__NEXT_DATA__")
+                if script:
+                    try:
+                        data = json.loads(script.string)
+                        latest_episode = data["props"]["pageProps"]["fallbackData"]["comicResponse"]["latest_episode"]
+                        chapter_text = latest_episode.get("title", "No title found")
+                        published_at = latest_episode.get("published_at")
+                        if published_at:
+                            # published_at: "2025-04-27T11:00:00.000+09:00"
+                            timestamp = datetime.datetime.strptime(published_at[:10], "%Y-%m-%d").strftime("%Y/%m/%d")
+                        latest_chapter = chapter_text
+                    except Exception as e:
+                        logging.error(f"Error parsing __NEXT_DATA__ JSON: {e}")
         elif "royalroad.com" in url:
             if force_update or url not in previous_data or (datetime.datetime.now() - datetime.datetime.strptime(previous_data[url]["timestamp"], "%Y/%m/%d")).days > 2:
                 url_parts = url.split('/')
