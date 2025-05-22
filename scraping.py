@@ -13,6 +13,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask_socketio import SocketIO, emit
 
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 logging.basicConfig(level=logging.INFO)
 
 LINKS_FILE = "links.json"
@@ -79,15 +82,16 @@ def scrape_website(url, previous_data, force_update=False):
                 options.add_argument('--no-sandbox')
                 options.add_argument('--disable-dev-shm-usage')
                 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+                
+                driver.get("https://ichijin-plus.com")  # Open the domain first so Selenium can set the cookie
+                driver.add_cookie({
+                    'name': 'show_sensitive_content',
+                    'value': '1',
+                    'domain': '.ichijin-plus.com',
+                    'path': '/',
+                })
+
                 driver.get(url)
-
-                # Wait for the confirmation button to appear and click it
-                time.sleep(1)  # Adjust the sleep time if necessary
-                confirm_button = driver.find_element(By.CSS_SELECTOR, 'button.sc-7b6314f8-0.eTdIgQ.sc-aa979754-0.kYPxZt.sc-f451283c-0.AFYbD')
-                confirm_button.click()
-
-                # Wait for the page to load after clicking the button
-                time.sleep(1)  # Adjust the sleep time if necessary
                 soup = BeautifulSoup(driver.page_source, "html.parser")
                 driver.quit()
                 
