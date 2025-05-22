@@ -142,17 +142,28 @@ def remove_link():
     file_path_links = MANGA_LINKS_FILE if request.path.startswith('/manga') else LINKS_FILE
     file_path_data = MANGA_DATA_FILE if request.path.startswith('/manga') else DATA_FILE
     links = load_links(file_path=file_path_links)
-    
+
+    def normalize_url(url):
+        if url.startswith("http://"):
+            return url[len("http://"):]
+        elif url.startswith("https://"):
+            return url[len("https://"):]
+        return url
+
+    input_url = normalize_url(data["url"])
+
     # Remove the link from the links file
-    links = [link for link in links if link["url"] != data["url"]]
+    links = [link for link in links if normalize_url(link["url"]) != input_url]
     save_links(links, file_path=file_path_links)
-    
+
     # Remove the entry from the data file
     previous_data = load_previous_data(file_path=file_path_data)
-    if data["url"] in previous_data:
-        del previous_data[data["url"]]
+    keys_to_remove = [url for url in previous_data if normalize_url(url) == input_url]
+    for url in keys_to_remove:
+        del previous_data[url]
+    if keys_to_remove:
         save_data(previous_data, file_path=file_path_data)
-    
+
     return jsonify({"status": "success"})
 
 if __name__ == "__main__":
