@@ -43,6 +43,7 @@ table th, table td {
 table th {
     background-color: #2ecc71;
     color: white;
+    text-align: center;
 }
 
 table tr:nth-child(even) {
@@ -94,6 +95,41 @@ input[type="text"] {
 
 #addLinkForm button {
     width: 15%;
+}
+
+#removeLinkForm {
+    width: 40%;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#removeLinkForm input[type="text"] {
+    width: 80%;
+    margin-right: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#removeLinkForm button {
+    width: 18%;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 0;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#removeLinkForm button:hover {
+    background-color: #c0392b;
 }
 
 #overlay {

@@ -80,6 +80,26 @@ function addLink() {
     }
 }
 
+function removeLink() {
+    const url = document.getElementById("removeUrl").value;
+    if (!confirm("Are you sure you want to remove this link?")) return;
+
+    const path = window.location.pathname.startsWith('/manga') ? '/manga/remove' : '/remove';
+    fetch(path, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({url: url})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            location.reload(); // Refresh the page to update the table
+        } else {
+            alert("Failed to remove link.");
+        }
+    });
+}
+
 function forceUpdate() {
     showSpinner();
     document.getElementById('statusMessage').innerText = 'Fully updating database...';
