@@ -1,0 +1,5 @@
+*.json
+*.txt
+debug.md
+/__pycache__/
+*.pyc
