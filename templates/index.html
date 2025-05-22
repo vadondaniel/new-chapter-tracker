@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+    <script>
+        var update_in_progress = {{ update_in_progress|tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</head>
+<body>
+    <h1>New Chapter Tracker</h1>
+    
+    <div class="table-header">
+        <h2>New Chapters</h2>
+        <div class="tooltip">
+            <button onclick="forceUpdate()">Force Full Update</button>
+            <span class="tooltiptext" id="lastUpdateTooltip">{{ last_full_update }}</span>
+        </div>
+    </div>
+    <table border="1">
+        <tr>
+            <th>Name</th>
+            <th>Last Saved Chapter</th>
+            <th>Last Found Chapter</th>
+            <th>Last Updated</th>
+            <th>Action</th>
+        </tr>
+        {% for url, data in differences.items() %}
+        <tr>
+            <td><a href="{{ url }}" target="_blank">{{ data.name }}</a></td>
+            <td>{{ data.last_saved }}</td>
+            <td>{{ data.last_found }}</td>
+            <td style="white-space: nowrap; width: 0;">{{ data.timestamp }}</td>
+            <td style="white-space: nowrap; width: 0;">
+                <button onclick="updateChapter('{{ url }}')">Save</button>
+                <button onclick="recheckChapter('{{ url }}')">Recheck</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="table-header">
+        <h2>No New Chapters</h2>
+    </div>
+    <table border="1">
+        <tr>
+            <th>Name</th>
+            <th>Last Chapter</th>
+            <th>Last Updated</th>
+            <th>Action</th>
+        </tr>
+        {% for url, data in same_data.items() %}
+        <tr>
+            <td><a href="{{ url }}" target="_blank">{{ data.name }}</a></td>
+            <td>{{ data.last_found }}</td>
+            <td style="white-space: nowrap; width: 0;" TODO="tooltip to show exact date, otherwise, moment(data.timestamp).fromNow() ...or just relative for today/yesterday">{{ data.timestamp }}</td>
+            <td style="white-space: nowrap; width: 0;">
+                <button onclick="recheckChapter('{{ url }}')">Recheck</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <h2>Add New Link</h2>
+    <div id="addLinkForm">
+        <input type="text" id="newName" placeholder="Name">
+        <input type="text" id="newUrl" placeholder="URL">
+        <button onclick="addLink()">Add</button>
+    </div>
+
+    <div id="overlay">
+        <div id="overlay-content">
+            <div id="spinner"></div>
+            <div id="statusMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        var retainValue = function (value) {
+            if (value > 9) {
+                return Math.floor(value);
+            } else {
+                return Math.floor(value * 10) / 10;
+            }
+        };
+
+
+        document.addEventListener("DOMContentLoaded", function() {
+            var lastUpdate = "{{ last_full_update }}";
+            if (lastUpdate) {
+                moment.relativeTimeRounding(Math.floor);
+                //moment.relativeTimeRounding(retainValue);
+                moment.relativeTimeThreshold('s', 60);
+                moment.relativeTimeThreshold('m', 60);
+                moment.relativeTimeThreshold('h', 24);
+                moment.relativeTimeThreshold('d', 31);
+                moment.relativeTimeThreshold('M', 12);
+                var relativeTime = moment(lastUpdate).fromNow();
+                if (relativeTime === "Invalid date") {
+                    relativeTime = "Never";
+                }
+                document.getElementById("lastUpdateTooltip").textContent = relativeTime;
+            }
+        });
+    </script>
+</body>
+</html>
