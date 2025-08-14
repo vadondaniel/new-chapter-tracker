@@ -128,9 +128,9 @@ def scrape_website(url, previous_data, force_update=False):
                     updated_date_padded = '.'.join(part.zfill(2) for part in updated_date_parts)
                     timestamp = datetime.datetime.strptime(updated_date_padded, "%Y.%m.%d").strftime("%Y/%m/%d") if updated_date else datetime.datetime.now().strftime("%Y/%m/%d")
                     latest_chapter = f"{chapter_text}"
-        elif "kemono.su" in url:
+        elif "kemono.cr" in url.replace("kemono.su", "kemono.cr"):
             if force_update or url not in previous_data or (datetime.datetime.now() - datetime.datetime.strptime(previous_data[url]["timestamp"], "%Y/%m/%d")).days > 5:
-                api_url = url.replace("kemono.su", "kemono.su/api/v1")
+                api_url = url.replace("kemono.su", "kemono.cr").replace("kemono.cr", "kemono.cr/api/v1") + "/posts"
                 response = requests.get(api_url, headers={"User-Agent": "Mozilla/5.0"})
                 data = response.json()
                 if data and len(data) > 0:
@@ -149,7 +149,7 @@ def scrape_website(url, previous_data, force_update=False):
                     updated_date = post_meta.find("time", class_="updated").get("datetime").strip()
                     timestamp = datetime.datetime.strptime(updated_date, "%Y-%m-%d").strftime("%Y/%m/%d")
                     latest_chapter = f"{chapter_text}"
-        else:
+        else: # TODO: add more sites (NovelUpdates, ScribbleHub, etc)
             response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
             soup = BeautifulSoup(response.text, "html.parser")
             latest_chapter = "Unsupported website"
