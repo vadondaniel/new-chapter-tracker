@@ -1,7 +1,23 @@
 var socket = io();
 
+// ===== Overlay Controls =====
+function showSpinner(message = "Loading...") {
+    const overlay = document.getElementById('overlay');
+    document.getElementById('statusMessage').innerText = message;
+    overlay.classList.add('show');
+}
+
+function hideSpinner() {
+    const overlay = document.getElementById('overlay');
+    overlay.classList.remove('show');
+}
+
+// ===== Progress updates via WebSocket =====
 socket.on('update_progress', function(data) {
-    document.getElementById('statusMessage').innerText = `Updating... ${data.current}/${data.total}`;
+    showSpinner(`Updating... ${data.current}/${data.total}`);
+    const fill = document.getElementById('progressFill');
+    const percent = (data.current / data.total) * 100;
+    fill.style.width = percent + '%';
 });
 
 socket.on('update_complete', function() {
@@ -9,75 +25,55 @@ socket.on('update_complete', function() {
     location.reload();
 });
 
-function showSpinner() {
-    console.log("Showing spinner");
-    document.getElementById('overlay').style.display = 'flex';
-    document.getElementById('spinner').style.display = 'block';
-    document.getElementById('statusMessage').style.display = 'block';
-}
-
-function hideSpinner() {
-    console.log("Hiding spinner");
-    document.getElementById('overlay').style.display = 'none';
-    document.getElementById('spinner').style.display = 'none';
-    document.getElementById('statusMessage').style.display = 'none';
-}
-
+// ===== AJAX functions =====
 function updateChapter(url) {
-    showSpinner();
-    document.getElementById('statusMessage').innerText = 'Updating chapter...';
+    showSpinner('Updating chapter...');
     const path = window.location.pathname.startsWith('/manga') ? '/manga/update' : '/update';
     fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url, timestamp: new Date().toISOString() })
-    }).then(response => response.json())
-      .then(data => {
-          hideSpinner();
-          location.reload();
-      }).catch(error => {
-          console.error("Error updating chapter:", error);
-          hideSpinner();
-      });
+    })
+    .then(response => response.json())
+    .then(data => hideSpinner())
+    .then(() => location.reload())
+    .catch(error => {
+        console.error("Error updating chapter:", error);
+        hideSpinner();
+    });
 }
 
 function recheckChapter(url) {
-    showSpinner();
-    document.getElementById('statusMessage').innerText = 'Rechecking chapter...';
+    showSpinner('Rechecking chapter...');
     const path = window.location.pathname.startsWith('/manga') ? '/manga/recheck' : '/recheck';
     fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url })
-    }).then(response => response.json())
-      .then(data => {
-          hideSpinner();
-          location.reload();
-      }).catch(error => {
-          console.error("Error rechecking chapter:", error);
-          hideSpinner();
-      });
+    })
+    .then(response => response.json())
+    .then(data => hideSpinner())
+    .then(() => location.reload())
+    .catch(error => {
+        console.error("Error rechecking chapter:", error);
+        hideSpinner();
+    });
 }
 
 function addLink() {
     const name = document.getElementById('newName').value;
     const url = document.getElementById('newUrl').value;
+    if (!name || !url) return alert("Please enter both name and URL.");
     
-    if (name && url) {
-        const path = window.location.pathname.startsWith('/manga') ? '/manga/add' : '/add';
-        fetch(path, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, url: url })
-        }).then(response => response.json())
-          .then(data => location.reload())
-          .catch(error => {
-              console.error("Error adding link:", error);
-              hideSpinner();
-          });
-    } else {
-        alert("Please enter both name and URL.");
-    }
+    const path = window.location.pathname.startsWith('/manga') ? '/manga/add' : '/add';
+    fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url })
+    })
+    .then(response => response.json())
+    .then(() => location.reload())
+    .catch(error => console.error("Error adding link:", error));
 }
 
 function removeLink() {
@@ -88,39 +84,24 @@ function removeLink() {
     fetch(path, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({url: url})
+        body: JSON.stringify({url})
     })
     .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            location.reload(); // Refresh the page to update the table
-        } else {
-            alert("Failed to remove link.");
-        }
-    });
+    .then(data => data.status === "success" ? location.reload() : alert("Failed to remove link."));
 }
 
 function forceUpdate() {
-    showSpinner();
-    document.getElementById('statusMessage').innerText = 'Fully updating database...';
+    showSpinner('Fully updating database...');
     const path = window.location.pathname.startsWith('/manga') ? '/manga/force_update' : '/force_update';
-    fetch(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    }).then(response => response.json())
-      .then(data => {
-          // Do nothing here, wait for WebSocket update
-      }).catch(error => {
-          console.error("Error forcing update:", error);
-          hideSpinner();
-      });
+    fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        .then(response => response.json())
+        .catch(error => { console.error("Error forcing update:", error); hideSpinner(); });
 }
 
+// ===== On page load =====
 window.onload = function() {
-    console.log("Window loaded, update_in_progress:", update_in_progress);
     if (update_in_progress) {
-        showSpinner();
-        document.getElementById('statusMessage').innerText = 'Update in progress...';
+        showSpinner('Update in progress...');
     } else {
         hideSpinner();
     }

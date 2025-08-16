@@ -163,11 +163,14 @@
       </div>
     </div>
 
-    <div id="overlay">
-      <div id="overlay-content">
-        <div id="spinner"></div>
-        <div id="statusMessage"></div>
-      </div>
+    <div id="overlay" class="hidden" role="alert" aria-live="assertive">
+        <div id="overlay-content">
+            <div id="spinner"></div>
+            <div id="statusMessage">Loading...</div>
+            <div id="progressBar">
+                <div id="progressFill"></div>
+            </div>
+        </div>
     </div>
 
     <script>

@@ -161,7 +161,6 @@ button.danger:hover {
 
 /* ========= Overlay & Spinner ========= */
 #overlay {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -173,6 +172,14 @@ button.danger:hover {
     display: flex;
     justify-content: center;
     align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#overlay.show {
+    opacity: 1;
+    pointer-events: all;
 }
 
 #overlay-content {
@@ -189,16 +196,13 @@ button.danger:hover {
     width: 60px;
     height: 60px;
     animation: spin 1s linear infinite;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    margin-bottom: 15px;
 }
 
 @keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 #statusMessage {
@@ -209,7 +213,42 @@ button.danger:hover {
     font-size: 15px;
     color: #333;
     text-align: center;
-    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+/* Progress bar */
+#progressBar {
+    width: 100%;
+    max-width: 250px;
+    height: 6px;
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#progressFill {
+    width: 0;
+    height: 100%;
+    background-color: #2ecc71;
+    transition: width 0.3s ease;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    #spinner {
+        width: 40px;
+        height: 40px;
+        border-width: 3px;
+    }
+
+    #statusMessage {
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+
+    #progressBar {
+        max-width: 200px;
+    }
 }
 
 /* ========= Tooltip ========= */
