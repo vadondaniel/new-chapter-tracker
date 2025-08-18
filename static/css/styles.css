@@ -317,3 +317,51 @@ button.danger:hover {
 table {
     overflow: visible;
 }
+
+/* Ensure tables are scrollable on small screens */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+/* Responsive tables: shrink text on small screens */
+@media (max-width: 600px) {
+    table th, table td {
+        font-size: 0.85rem;
+        padding: 8px 10px;
+    }
+
+    h1 {
+        font-size: 1.6rem;
+    }
+
+    h2 {
+        font-size: 1.2rem;
+    }
+
+    /* Buttons scale down */
+    button {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    table td button {
+        padding: 4px 8px;
+    }
+
+    /* Forms stack vertically */
+    #addLinkForm,
+    #removeLinkForm {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #addLinkForm input,
+    #removeLinkForm input,
+    #addLinkForm button,
+    #removeLinkForm button {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+}
