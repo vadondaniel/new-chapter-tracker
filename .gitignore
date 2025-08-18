@@ -3,3 +3,4 @@
 debug.md
 /__pycache__/
 *.pyc
+.gitignore
