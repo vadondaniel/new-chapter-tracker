@@ -75,10 +75,37 @@ class BrowserManager:
 
     def __init__(self):
         options = Options()
-        options.add_argument('--headless')
+        # Headless Chrome mode
+        options.add_argument('--headless=new')  # Use the new headless mode (Chrome 109+)
+
+        # System and performance flags
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
+        options.add_argument('--mute-audio')
+        options.add_argument('--metrics-recording-only')
+
+        # Disable unnecessary features
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-infobars')
+        options.add_argument('--disable-notifications')
+        options.add_argument('--disable-cloud-import')
+        options.add_argument('--disable-sync')
+        options.add_argument('--disable-client-side-phishing-detection')
+        options.add_argument('--disable-background-networking')
+        options.add_argument('--disable-background-timer-throttling')
+        options.add_argument('--disable-backgrounding-occluded-windows')
+        options.add_argument('--disable-component-update')
+        options.add_argument('--disable-default-apps')
+
+        # Privacy and identity
+        options.add_argument('--no-first-run')
+        options.add_argument('--no-default-browser-check')
+        options.add_argument('--ignore-certificate-errors')
+        options.add_argument('--guest')
+        
+        # Suppress logs
+        options.add_argument("--log-level=3")
         self.driver = webdriver.Chrome(
             service=ChromeService(ChromeDriverManager().install()),
             options=options
