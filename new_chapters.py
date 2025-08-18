@@ -160,4 +160,4 @@ if __name__ == "__main__":
     # Force initial full updates
     force_update_job(LINKS_FILE, DATA_FILE, "main")
     force_update_job(MANGA_LINKS_FILE, MANGA_DATA_FILE, "manga")
-    app.run(debug=False, port=555)
+    app.run(host='0.0.0.0', debug=False, port=555)
