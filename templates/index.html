@@ -71,81 +71,95 @@
       <div class="table-header">
         <h2>New Chapters</h2>
         <div class="full-update-tooltip">
-          <button onclick="forceUpdate()"><i class="fas fa-sync-alt"></i> Force Full Update</button>
-          <span class="tooltiptext" id="lastUpdateTooltip">{{ last_full_update }}</span>
+          <button onclick="forceUpdate()">
+            <i class="fas fa-sync-alt"></i> Force Full Update
+          </button>
+          <span class="tooltiptext" id="lastUpdateTooltip"
+            >{{ last_full_update }}</span
+          >
         </div>
       </div>
       <div class="table-wrapper">
-      <table border="1">
-        <tr>
-          <th>Name</th>
-          <th>Last Saved Chapter</th>
-          <th>Last Found Chapter</th>
-          <th>Last Updated</th>
-          <th></th>
-        </tr>
-        {% for url, data in differences.items() %}
-        <tr>
-          <td>
-            <div class="table-tooltip">
-              <a href="{{ url }}" target="_blank" class="domain-tooltip">{{ data.name }}</a>
-              <span class="tooltiptext"></span>
-            </div>
-          </td>
-          <td>{{ data.last_saved }}</td>
-          <td>{{ data.last_found }}</td>
-          <td style="white-space: nowrap; width: 0">{{ data.timestamp }}</td>
-          <td style="white-space: nowrap; width: 0">
-            <div class="table-tooltip">
-              <button onclick="updateChapter('{{ url }}')"><i class="fas fa-save"></i></button>
-              <span class="tooltiptext">Save</span>
-            </div>
-            <div class="table-tooltip">
-              <button onclick="recheckChapter('{{ url }}')"><i class="fas fa-sync-alt"></i></button>
-              <span class="tooltiptext">Recheck</span>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </table>
-    </div>
+        <table border="1">
+          <tr>
+            <th>Name</th>
+            <th>Last Saved Chapter</th>
+            <th>Last Found Chapter</th>
+            <th>Last Updated</th>
+            <th></th>
+          </tr>
+          {% for url, data in differences.items() %}
+          <tr>
+            <td>
+              <div class="table-tooltip">
+                <a href="{{ url }}" target="_blank" class="domain-tooltip"
+                  >{{ data.name }}</a
+                >
+                <span class="tooltiptext"></span>
+              </div>
+            </td>
+            <td>{{ data.last_saved }}</td>
+            <td>{{ data.last_found }}</td>
+            <td style="white-space: nowrap; width: 0">{{ data.timestamp }}</td>
+            <td style="white-space: nowrap; width: 0">
+              <div class="table-tooltip">
+                <button onclick="updateChapter('{{ url }}')">
+                  <i class="fas fa-save"></i>
+                </button>
+                <span class="tooltiptext">Save</span>
+              </div>
+              <div class="table-tooltip">
+                <button onclick="recheckChapter('{{ url }}')">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+                <span class="tooltiptext">Recheck</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
 
       <div class="table-header">
         <h2>No New Chapters</h2>
       </div>
       <div class="table-wrapper">
-      <table border="1">
-        <tr>
-          <th>Name</th>
-          <th>Last Chapter</th>
-          <th>Last Updated</th>
-          <th></th>
-        </tr>
-        {% for url, data in same_data.items() %}
-        <tr>
-          <td>
-            <div class="table-tooltip">
-              <a href="{{ url }}" target="_blank" class="domain-tooltip">{{ data.name }}</a>
-              <span class="tooltiptext"></span>
-            </div>
-          </td>
-          <td>{{ data.last_found }}</td>
-          <td
-            style="white-space: nowrap; width: 0"
-            TODO="tooltip to show exact date, otherwise, moment(data.timestamp).fromNow() ...or just relative for today/yesterday"
-          >
-            {{ data.timestamp }}
-          </td>
-          <td style="white-space: nowrap; width: 0">
-            <div class="table-tooltip">
-              <button onclick="recheckChapter('{{ url }}')"><i class="fas fa-sync-alt"></i></button>
-              <span class="tooltiptext">Recheck</span>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </table>
-    </div>
+        <table border="1">
+          <tr>
+            <th>Name</th>
+            <th>Last Chapter</th>
+            <th>Last Updated</th>
+            <th></th>
+          </tr>
+          {% for url, data in same_data.items() %}
+          <tr>
+            <td>
+              <div class="table-tooltip">
+                <a href="{{ url }}" target="_blank" class="domain-tooltip"
+                  >{{ data.name }}</a
+                >
+                <span class="tooltiptext"></span>
+              </div>
+            </td>
+            <td>{{ data.last_found }}</td>
+            <td
+              style="white-space: nowrap; width: 0"
+              TODO="tooltip to show exact date, otherwise, moment(data.timestamp).fromNow() ...or just relative for today/yesterday"
+            >
+              {{ data.timestamp }}
+            </td>
+            <td style="white-space: nowrap; width: 0">
+              <div class="table-tooltip">
+                <button onclick="recheckChapter('{{ url }}')">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+                <span class="tooltiptext">Recheck</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
 
       <h2>Add New Link</h2>
       <div id="addLinkForm">
@@ -161,20 +175,22 @@
       <div id="removeLinkForm">
         <input type="text" id="removeUrl" placeholder="URL to remove" />
         <div class="table-tooltip">
-          <button onclick="removeLink()" class="danger"><i class="fas fa-trash"></i> Delete</button>
+          <button onclick="removeLink()" class="danger">
+            <i class="fas fa-trash"></i> Delete
+          </button>
           <span class="tooltiptext">Delete Entry</span>
         </div>
       </div>
     </div>
 
     <div id="overlay" class="hidden" role="alert" aria-live="assertive">
-        <div id="overlay-content">
-            <div id="spinner"></div>
-            <div id="statusMessage">Loading...</div>
-            <div id="progressBar">
-                <div id="progressFill"></div>
-            </div>
+      <div id="overlay-content">
+        <div id="spinner"></div>
+        <div id="statusMessage">Loading...</div>
+        <div id="progressBar">
+          <div id="progressFill"></div>
         </div>
+      </div>
     </div>
 
     <script>
@@ -207,15 +223,17 @@
           try {
             const urlObj = new URL(link.href);
             let hostname = urlObj.hostname;
-        
+
             // Strip "www." if present
             if (hostname.startsWith("www.")) {
               hostname = hostname.slice(4);
             }
-        
-            link.parentElement.querySelector(".tooltiptext").textContent = hostname;
+
+            link.parentElement.querySelector(".tooltiptext").textContent =
+              hostname;
           } catch (e) {
-            link.parentElement.querySelector(".tooltiptext").textContent = "Invalid URL";
+            link.parentElement.querySelector(".tooltiptext").textContent =
+              "Invalid URL";
           }
         });
       });
