@@ -414,3 +414,11 @@ table {
 .status-info i {
   color: #0ea5e9;
 }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.table-wrapper, .status-box {
+  animation: fadeUp 0.4s ease both;
+}
