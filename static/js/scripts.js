@@ -126,3 +126,10 @@ window.onload = function () {
     hideSpinner();
   }
 };
+
+// ===== Collapse Tables =====
+function toggleSection(header) {
+  header.classList.toggle("collapsed");
+  const content = header.closest(".table-header").nextElementSibling;
+  content.classList.toggle("collapsed");
+}

@@ -30,6 +30,47 @@ h2 {
   margin-bottom: 10px;
 }
 
+.badge {
+  background: #2ecc71;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  margin-left: 6px;
+}
+
+/* ========= Collapsible Sections ========= */
+h2.toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+h2.toggle::after {
+  content: "▼";
+  font-size: 0.9rem;
+  transition: transform 0.2s ease;
+  margin-left: 6px;
+}
+
+h2.toggle.collapsed::after {
+  transform: rotate(-90deg);
+}
+
+/* Collapsible content animation */
+.collapsible-content {
+  max-height: 2000px; /* big enough to fit tables */
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+.collapsible-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
 /* ========= Table Section ========= */
 .table-header {
   display: flex;
@@ -70,6 +111,10 @@ table th {
 
 table tr {
   border-bottom: 1px solid #eee;
+}
+
+table tr:nth-child(even) {
+  background: #fafafa;
 }
 
 table tr:last-child {
