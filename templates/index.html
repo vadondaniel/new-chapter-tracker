@@ -79,6 +79,8 @@
           >
         </div>
       </div>
+
+      {% if differences %}
       <div class="table-wrapper">
         <table border="1">
           <tr>
@@ -119,10 +121,18 @@
           {% endfor %}
         </table>
       </div>
+      {% else %}
+      <div class="status-box status-success">
+        <i class="fas fa-check-circle"></i>
+        <span>All chapters are up to date!</span>
+      </div>
+      {% endif %}
 
       <div class="table-header">
         <h2>No New Chapters</h2>
       </div>
+
+      {% if same_data %}
       <div class="table-wrapper">
         <table border="1">
           <tr>
@@ -160,6 +170,12 @@
           {% endfor %}
         </table>
       </div>
+      {% else %}
+      <div class="status-box status-info">
+        <i class="fas fa-info-circle"></i>
+        <span>No entries being tracked yet.</span>
+      </div>
+      {% endif %}
 
       <h2>Add New Link</h2>
       <div id="addLinkForm">

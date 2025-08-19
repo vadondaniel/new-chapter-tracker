@@ -375,3 +375,42 @@ table {
     box-sizing: border-box;
   }
 }
+
+/* ========= Status Messages ========= */
+.status-box {
+  margin: 15px 0;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  background: #fff;
+}
+
+.status-box i {
+  font-size: 1.1rem;
+}
+
+/* Success style (all up to date) */
+.status-success {
+  border-left: 5px solid #2ecc71;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.status-success i {
+  color: #2ecc71;
+}
+
+/* Info style (no entries tracked yet) */
+.status-info {
+  border-left: 5px solid #0ea5e9;
+  color: #035388;
+  background: #f0f9ff;
+}
+
+.status-info i {
+  color: #0ea5e9;
+}
