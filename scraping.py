@@ -257,23 +257,22 @@ def scrape_jnovels(url, previous_data, force_update=False):
     if not needs_update(url, previous_data, 10, force_update):
         return previous_data[url]["last_found"], previous_data[url]["timestamp"]
 
-    driver = BrowserManager.get_driver()
-    driver.get(url)
+    response = requests.get(url)
+    
+    soup = BeautifulSoup(response.content, "html.parser")
+    posts = soup.select("div.post-container")
+    
+    if not posts:
+        return "No new chapter found", datetime.datetime.now().strftime("%Y/%m/%d")
 
-    try:
-        wait = WebDriverWait(driver, 10)
-        post_container = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.post-container.post-loaded.fade-in"))
-        )
-        post_header = post_container.find_element(By.CSS_SELECTOR, "header.post-header")
-        post_meta = post_container.find_element(By.CSS_SELECTOR, "div.post-meta")
-        chapter_text = post_header.find_element(By.CSS_SELECTOR, "h1.post-title.entry-title").text.strip()
-        updated_date = post_meta.find_element(By.CSS_SELECTOR, "time.updated").get_attribute("datetime").strip()
-        timestamp = parse_timestamp(updated_date)
-        return chapter_text, timestamp
-    except Exception as e:
-        logging.error(f"Error scraping jnovels.com {url}: {e}")
-        return "Error scraping jnovels.com", datetime.datetime.now().strftime("%Y/%m/%d")
+    latest_post = posts[0]
+    title_tag = latest_post.select_one("h1.post-title a")
+    time_tag = latest_post.select_one("time.updated")
+
+    chapter_text = title_tag.text.strip() if title_tag else "No title found"
+    timestamp = parse_timestamp(time_tag["datetime"]) if time_tag else datetime.datetime.now().strftime("%Y/%m/%d")
+    
+    return chapter_text, timestamp
 
 def scrape_generic(url, previous_data, force_update=False):
     return "Unsupported website", datetime.datetime.now().strftime("%Y/%m/%d")
