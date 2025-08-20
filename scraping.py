@@ -1,8 +1,10 @@
 import os
 import json
 import logging
+import re
 import time
 import datetime
+from urllib.parse import urljoin
 from dateutil import parser
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -135,26 +137,66 @@ def parse_timestamp(date_str, fmt="%Y-%m-%d"):
     return datetime.datetime.strptime(date_str[:10], fmt).strftime("%Y/%m/%d")
 
 # --------------------- Individual Scrapers ---------------------
-def scrape_ichijin(url, previous_data, force_update=False):
+def scrape_ichicomi(url, previous_data, force_update=False):
+    # Same update check logic
     if not needs_update(url, previous_data, 10, force_update):
         return previous_data[url]["last_found"], previous_data[url]["timestamp"]
 
-    response = requests.get(url).content
-    soup = BeautifulSoup(response, "html.parser")
-    script = soup.find("script", id="__NEXT_DATA__")
     latest_chapter, timestamp = "No new chapter found", datetime.datetime.now().strftime("%Y/%m/%d")
     
-    if script:
-        try:
-            data = json.loads(script.string)
-            latest_episode = data["props"]["pageProps"]["fallbackData"]["comicResponse"]["latest_episode"]
-            chapter_text = latest_episode.get("title", "No title found")
-            published_at = latest_episode.get("published_at")
-            if published_at:
-                timestamp = parse_timestamp(published_at)
-            latest_chapter = chapter_text
-        except Exception as e:
-            logging.error(f"Error parsing __NEXT_DATA__ JSON: {e}")
+    HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/117.0 Safari/537.36"
+        ),
+        "Referer": "https://ichicomi.com/",
+    }
+
+    try:
+        # Step 1: Fetch the series/first-episode page to get the title
+        page = requests.get(url, headers=HEADERS)
+        soup = BeautifulSoup(page.text, "html.parser")
+        title_tag = soup.select_one("h1.series-header-title")
+        if not title_tag:
+            logging.warning(f"Series title not found for {url}")
+            return latest_chapter, timestamp
+
+        series_title = title_tag.text.strip()
+
+        # Step 2: Fetch the search results page
+        search_url = f"https://ichicomi.com/search?q={series_title}"
+        search_page = requests.get(search_url, headers=HEADERS)
+        search_soup = BeautifulSoup(search_page.text, "html.parser")
+
+        # Step 3: Find the latest chapter link from search results
+        latest_chapter_link = search_soup.select_one("a.SearchResultItem_sub_link__BB9Z8")
+        if not latest_chapter_link:
+            logging.warning(f"No latest chapter link found for {series_title}")
+            return latest_chapter, timestamp
+
+        latest_url = urljoin("https://ichicomi.com", latest_chapter_link["href"])
+
+        # Step 4: Fetch latest chapter page
+        chapter_page = requests.get(latest_url, headers=HEADERS)
+        chapter_soup = BeautifulSoup(chapter_page.text, "html.parser")
+
+        # Step 5: Extract chapter title
+        chapter_title_tag = chapter_soup.select_one(".episode-header-title")
+        if chapter_title_tag:
+            latest_chapter = chapter_title_tag.text.strip()
+
+        # Step 6: Extract chapter date
+        date_tag = chapter_soup.select_one(".episode-header-date")
+        if date_tag:
+            raw_date = date_tag.text.strip()
+            match = re.match(r"(\d{4})年(\d{2})月(\d{2})日", raw_date)
+            if match:
+                timestamp = f"{match.group(1)}/{match.group(2)}/{match.group(3)}"
+
+    except Exception as e:
+        logging.error(f"Error scraping {url}: {e}")
+
     return latest_chapter, timestamp
 
 def scrape_royalroad(url, previous_data, force_update=False):
@@ -238,7 +280,7 @@ def scrape_generic(url, previous_data, force_update=False):
 
 # --------------------- Scraper Dispatcher ---------------------
 SCRAPERS = {
-    "ichijin-plus.com": scrape_ichijin,
+    "ichicomi.com": scrape_ichicomi,
     "royalroad.com": scrape_royalroad,
     "web-ace.jp": scrape_web_ace,
     "kemono.cr": scrape_kemono_cr,
