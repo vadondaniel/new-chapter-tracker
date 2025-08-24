@@ -91,7 +91,7 @@ table {
   margin: 20px 0;
   background: #fff;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
@@ -365,11 +365,6 @@ button.danger:hover {
   transform: translateY(-50%);
   margin-right: 5px;
   white-space: nowrap;
-}
-
-/* Optional: prevent table overflow */
-table {
-  overflow: visible;
 }
 
 /* Ensure tables are scrollable on small screens */

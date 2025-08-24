@@ -6,7 +6,7 @@ import logging
 from scraping import (
     load_links, save_links, save_data, load_previous_data,
     scrape_website, scrape_all_links,
-    LINKS_FILE, MANGA_LINKS_FILE, DATA_FILE, MANGA_DATA_FILE
+    LINKS_FILE, MANGA_LINKS_FILE, DATA_FILE, MANGA_DATA_FILE, NOVEL_LINKS_FILE, NOVEL_DATA_FILE
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 socketio = SocketIO(app)
 update_in_progress = False
-last_full_update = {"main": None, "manga": None}
+last_full_update = {"main": None, "manga": None, "novel": None}
 
 # Pass the socketio object to scraping2.py
 import scraping
@@ -45,13 +45,16 @@ def schedule_updates():
     scheduler = BackgroundScheduler()
     scheduler.add_job(lambda: force_update_job(LINKS_FILE, DATA_FILE, "main"), 'interval', hours=1)
     scheduler.add_job(lambda: force_update_job(MANGA_LINKS_FILE, MANGA_DATA_FILE, "manga"), 'interval', hours=5)
+    scheduler.add_job(lambda: force_update_job(NOVEL_LINKS_FILE, NOVEL_DATA_FILE, "novel"), 'interval', hours=5)
     scheduler.start()
 
 @app.route('/')
 @app.route('/manga')
+@app.route('/novel')
 def index():
     is_manga = request.path.startswith('/manga')
-    file_path = MANGA_DATA_FILE if is_manga else DATA_FILE
+    is_novel = request.path.startswith('/novel')
+    file_path = MANGA_DATA_FILE if is_manga else NOVEL_DATA_FILE if is_novel else DATA_FILE
     previous_data = load_previous_data(file_path=file_path)
 
     differences = {url: data for url, data in previous_data.items() if data["last_found"] != data["last_saved"]}
@@ -61,7 +64,7 @@ def index():
     differences = dict(sorted(differences.items(), key=lambda x: x[1]["timestamp"], reverse=True))
     same_data = dict(sorted(same_data.items(), key=lambda x: x[1]["timestamp"], reverse=True))
 
-    update_type = "manga" if is_manga else "main"
+    update_type = "manga" if is_manga else "novel" if is_novel else "main"
     logging.info(f"Last full update ({update_type}): {last_full_update[update_type]}")
     return render_template(
         "index.html",
@@ -72,14 +75,16 @@ def index():
     )
 
 def get_file_paths():
-    is_manga = request.path.startswith('/manga')
-    return (
-        MANGA_LINKS_FILE if is_manga else LINKS_FILE,
-        MANGA_DATA_FILE if is_manga else DATA_FILE
-    )
+    path = request.path
+    if path.startswith("/manga"):
+        return MANGA_LINKS_FILE, MANGA_DATA_FILE
+    if path.startswith("/novel"):
+        return NOVEL_LINKS_FILE, NOVEL_DATA_FILE
+    return LINKS_FILE, DATA_FILE
 
 @app.route('/update', methods=["POST"])
 @app.route('/manga/update', methods=["POST"])
+@app.route('/novel/update', methods=["POST"])
 def update():
     data = request.json
     _, file_path = get_file_paths()
@@ -93,13 +98,15 @@ def update():
 
 @app.route('/force_update', methods=["POST"])
 @app.route('/manga/force_update', methods=["POST"])
+@app.route('/novel/force_update', methods=["POST"])
 def force_update():
     file_path_links, file_path_data = get_file_paths()
-    force_update_job(file_path_links, file_path_data, update_type="manga" if request.path.startswith('/manga') else "main")
+    force_update_job(file_path_links, file_path_data, update_type="manga" if request.path.startswith('/manga') else "novel" if request.path.startswith('/novel') else"main")
     return jsonify({"status": "success"})
 
 @app.route('/recheck', methods=["POST"])
 @app.route('/manga/recheck', methods=["POST"])
+@app.route('/novel/recheck', methods=["POST"])
 def recheck():
     data = request.json
     _, file_path = get_file_paths()
@@ -115,6 +122,7 @@ def recheck():
 
 @app.route('/add', methods=["POST"])
 @app.route('/manga/add', methods=["POST"])
+@app.route('/novel/add', methods=["POST"])
 def add_link():
     data = request.json
     file_path_links, file_path_data = get_file_paths()
@@ -134,6 +142,7 @@ def add_link():
 
 @app.route('/remove', methods=["POST"])
 @app.route('/manga/remove', methods=["POST"])
+@app.route('/novel/remove', methods=["POST"])
 def remove_link():
     data = request.json
     file_path_links, file_path_data = get_file_paths()
@@ -160,4 +169,5 @@ if __name__ == "__main__":
     # Force initial full updates
     force_update_job(LINKS_FILE, DATA_FILE, "main")
     force_update_job(MANGA_LINKS_FILE, MANGA_DATA_FILE, "manga")
+    force_update_job(NOVEL_LINKS_FILE, NOVEL_DATA_FILE, "novel")
     app.run(host='0.0.0.0', debug=False, port=555)

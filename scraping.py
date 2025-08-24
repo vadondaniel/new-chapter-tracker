@@ -4,7 +4,7 @@ import logging
 import re
 import time
 import datetime
-from urllib.parse import urljoin
+from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 from dateutil import parser
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -28,6 +28,8 @@ LINKS_FILE = "links.json"
 MANGA_LINKS_FILE = "manga_links.json"
 DATA_FILE = "scraped_data.json"
 MANGA_DATA_FILE = "manga_scraped_data.json"
+NOVEL_LINKS_FILE = "novel_links.json"
+NOVEL_DATA_FILE = "novel_scraped_data.json"
 
 update_in_progress = False
 socketio = None  # Set externally
@@ -274,6 +276,41 @@ def scrape_jnovels(url, previous_data, force_update=False):
     
     return chapter_text, timestamp
 
+def convert_to_rss_url(url: str) -> str:
+    """Convert a Nyaa.si search URL to its RSS feed equivalent."""
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+
+    # Ensure RSS page param
+    query["page"] = ["rss"]
+
+    rss_url = urlunparse((
+        parsed.scheme,
+        parsed.netloc,
+        parsed.path,
+        parsed.params,
+        urlencode(query, doseq=True),
+        parsed.fragment
+    ))
+    return rss_url
+
+def scrape_nyaa(url, previous_data, force_update=False):
+    if not needs_update(url, previous_data, 2, force_update):
+        return previous_data[url]["last_found"], previous_data[url]["timestamp"]
+
+    rss_url = convert_to_rss_url(url)
+    response = requests.get(rss_url).content
+    soup = BeautifulSoup(response, "xml")
+
+    latest_item = soup.find("item")
+    if latest_item:
+        title = latest_item.find("title").get_text(strip=True)
+        pub_date = latest_item.find("pubDate").get_text(strip=True)
+        timestamp = datetime.datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %z").strftime("%Y/%m/%d")
+        return title, timestamp
+
+    return "No new torrent found", datetime.datetime.now().strftime("%Y/%m/%d")
+
 def scrape_generic(url, previous_data, force_update=False):
     return "Unsupported website", datetime.datetime.now().strftime("%Y/%m/%d")
 
@@ -284,6 +321,7 @@ SCRAPERS = {
     "web-ace.jp": scrape_web_ace,
     "kemono.cr": scrape_kemono_cr,
     "jnovels.com": scrape_jnovels,
+    "nyaa.si": scrape_nyaa,
 }
 
 def scrape_website(url, previous_data, force_update=False):

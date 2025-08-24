@@ -1,5 +1,12 @@
 var socket = io();
 
+const PREFIXES = ["/manga", "/novel"];
+
+function actionPath(action) {
+  const prefix = PREFIXES.find(p => window.location.pathname.startsWith(p)) || "";
+  return `${prefix}/${action}`.replace("//", "/");
+}
+
 // ===== Overlay Controls =====
 function showSpinner(message = "Loading...") {
   const overlay = document.getElementById("overlay");
@@ -28,9 +35,7 @@ socket.on("update_complete", function () {
 // ===== AJAX functions =====
 function updateChapter(url) {
   showSpinner("Updating chapter...");
-  const path = window.location.pathname.startsWith("/manga")
-    ? "/manga/update"
-    : "/update";
+  const path = actionPath("update");
   fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -47,9 +52,7 @@ function updateChapter(url) {
 
 function recheckChapter(url) {
   showSpinner("Rechecking chapter...");
-  const path = window.location.pathname.startsWith("/manga")
-    ? "/manga/recheck"
-    : "/recheck";
+  const path = actionPath("recheck");
   fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -69,9 +72,7 @@ function addLink() {
   const url = document.getElementById("newUrl").value;
   if (!name || !url) return alert("Please enter both name and URL.");
 
-  const path = window.location.pathname.startsWith("/manga")
-    ? "/manga/add"
-    : "/add";
+  const path = actionPath("add");
   fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -86,9 +87,7 @@ function removeLink() {
   const url = document.getElementById("removeUrl").value;
   if (!confirm("Are you sure you want to remove this link?")) return;
 
-  const path = window.location.pathname.startsWith("/manga")
-    ? "/manga/remove"
-    : "/remove";
+  const path = actionPath("remove");
   fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -104,9 +103,7 @@ function removeLink() {
 
 function forceUpdate() {
   showSpinner("Fully updating database...");
-  const path = window.location.pathname.startsWith("/manga")
-    ? "/manga/force_update"
-    : "/force_update";
+  const path = actionPath("force_update");
   fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
