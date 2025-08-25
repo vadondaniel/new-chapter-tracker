@@ -1,6 +1,14 @@
 var socket = io();
 
-const PREFIXES = ["/manga", "/novel"];
+let PREFIXES = [];
+
+async function loadPrefixes() {
+  const response = await fetch("/api/categories");
+  const categories = await response.json();
+  PREFIXES = categories.map(c => `/${c}`);
+}
+
+loadPrefixes()
 
 function actionPath(action) {
   const prefix = PREFIXES.find(p => window.location.pathname.startsWith(p)) || "";

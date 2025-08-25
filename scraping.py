@@ -2,7 +2,6 @@ import os
 import json
 import logging
 import re
-import time
 import datetime
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 from dateutil import parser
@@ -11,25 +10,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from bs4 import BeautifulSoup
 
-from flask_socketio import SocketIO
-
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 logging.basicConfig(level=logging.INFO)
-
-# --------------------- File Paths ---------------------
-LINKS_FILE = "links.json"
-MANGA_LINKS_FILE = "manga_links.json"
-DATA_FILE = "scraped_data.json"
-MANGA_DATA_FILE = "manga_scraped_data.json"
-NOVEL_LINKS_FILE = "novel_links.json"
-NOVEL_DATA_FILE = "novel_scraped_data.json"
 
 update_in_progress = False
 socketio = None  # Set externally
@@ -47,7 +33,7 @@ def save_json(data, file_path):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
         
-def load_links(file_path=LINKS_FILE):
+def load_links(file_path):
     if not os.path.exists(file_path):
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump([], f)
@@ -57,15 +43,15 @@ def load_links(file_path=LINKS_FILE):
             return data
     return []
 
-def save_links(links, file_path=LINKS_FILE):
+def save_links(links, file_path):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(links, f, indent=4)
 
-def save_data(data, file_path=DATA_FILE):
+def save_data(data, file_path):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
-def load_previous_data(file_path=DATA_FILE):
+def load_previous_data(file_path):
     if not os.path.exists(file_path):
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump({}, f)
