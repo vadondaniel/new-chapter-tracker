@@ -14,20 +14,21 @@ from config import CATEGORIES
 logging.basicConfig(level=logging.INFO)
 
 # --------------------- File Paths ---------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 FILE_PATHS = {
     "main": {
-        "links": os.path.join(BASE_DIR, "links.json"),
-        "data": os.path.join(BASE_DIR, "scraped_data.json"),
+        "links": os.path.join(DATA_DIR, "links.json"),
+        "data": os.path.join(DATA_DIR, "scraped_data.json"),
     }
 }
 
 # auto-generate paths from categories
 for category in CATEGORIES:
     FILE_PATHS[category] = {
-        "links": os.path.join(BASE_DIR, f"{category}_links.json"),
-        "data": os.path.join(BASE_DIR, f"{category}_scraped_data.json"),
+        "links": os.path.join(DATA_DIR, f"{category}_links.json"),
+        "data": os.path.join(DATA_DIR, f"{category}_scraped_data.json"),
     }
 
 app = Flask(__name__)
