@@ -61,7 +61,7 @@ h2.toggle.collapsed::after {
 
 /* Collapsible content animation */
 .collapsible-content {
-  max-height: 2000px; /* big enough to fit tables */
+  max-height: 100%;
   transition: max-height 0.3s ease, opacity 0.3s ease;
   opacity: 1;
 }
