@@ -234,7 +234,12 @@ def get_categories():
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
     schedule_updates()
-    # Initial updates
+    # Option A: Run synchronously at startup (wait before serving requests)
+    # for category, paths in FILE_PATHS.items():
+    #     force_update_job(paths["links"], paths["data"], category)
+
+    # Option B: Kick off background tasks at startup (server starts immediately)
     for category, paths in FILE_PATHS.items():
-        force_update_job(paths["links"], paths["data"], category)
+        socketio.start_background_task(force_update_job, paths["links"], paths["data"], category)
+
     app.run(host="0.0.0.0", debug=False, port=555)
