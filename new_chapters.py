@@ -115,8 +115,21 @@ def update(category=None):
 
 def force_update(category=None):
     file_path_links, file_path_data, update_type = get_file_paths()
-    force_update_job(file_path_links, file_path_data, update_type)
-    return jsonify({"status": "success"})
+    socketio.start_background_task(force_update_job, file_path_links, file_path_data, update_type)
+    return jsonify({"status": "started"})
+
+def schedule_updates():
+    scheduler = BackgroundScheduler(job_defaults={'max_instances': 1})
+    scheduler.add_job(
+        lambda: force_update_job(FILE_PATHS["main"]["links"], FILE_PATHS["main"]["data"], "main"),
+        'interval', hours=1
+    )
+    for category in CATEGORIES:
+        scheduler.add_job(
+            lambda c=category: force_update_job(FILE_PATHS[c]["links"], FILE_PATHS[c]["data"], c),
+            'interval', hours=5
+        )
+    scheduler.start()
 
 def recheck(category=None):
     data = request.json
