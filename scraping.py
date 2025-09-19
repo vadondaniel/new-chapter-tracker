@@ -285,9 +285,22 @@ def scrape_nyaa(url, previous_data, force_update=False):
         return previous_data[url]["last_found"], previous_data[url]["timestamp"]
 
     rss_url = convert_to_rss_url(url)
-    response = requests.get(rss_url).content
-    soup = BeautifulSoup(response, "xml")
 
+    # retry logic
+    max_retries = 3
+    delay = 2
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(rss_url, timeout=10)
+            response.raise_for_status()
+            break
+        except requests.RequestException as e:
+            if attempt < max_retries - 1:
+                datetime.time.sleep(delay)
+            else:
+                return f"Request failed after {max_retries} retries: {e}", datetime.datetime.now().strftime("%Y/%m/%d")
+
+    soup = BeautifulSoup(response.content, "xml")
     latest_item = soup.find("item")
     if latest_item:
         title = latest_item.find("title").get_text(strip=True)
