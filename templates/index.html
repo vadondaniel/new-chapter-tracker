@@ -115,11 +115,26 @@
                   </button>
                   <span class="tooltiptext">Save</span>
                 </div>
-                <div class="table-tooltip">
-                  <button onclick="recheckChapter('{{ url }}')">
-                    <i class="fas fa-sync-alt"></i>
+                <div class="menu-container" data-url="{{ url }}">
+                  <button
+                    class="menu-toggle"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    <i class="fas fa-ellipsis-h"></i>
                   </button>
-                  <span class="tooltiptext">Recheck</span>
+
+                  <div class="menu-actions" aria-hidden="true">
+                    <button class="edit" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="recheck" title="Recheck">
+                      <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="danger" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -168,11 +183,26 @@
                 {{ data.timestamp }}
               </td>
               <td style="white-space: nowrap; width: 0">
-                <div class="table-tooltip">
-                  <button onclick="recheckChapter('{{ url }}')">
-                    <i class="fas fa-sync-alt"></i>
+                <div class="menu-container" data-url="{{ url }}">
+                  <button
+                    class="menu-toggle"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    <i class="fas fa-ellipsis-h"></i>
                   </button>
-                  <span class="tooltiptext">Recheck</span>
+
+                  <div class="menu-actions" aria-hidden="true">
+                    <button class="edit" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="recheck" title="Recheck">
+                      <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="danger" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -194,17 +224,6 @@
         <div class="table-tooltip">
           <button onclick="addLink()"><i class="fas fa-plus"></i> Add</button>
           <span class="tooltiptext">Add New Entry</span>
-        </div>
-      </div>
-
-      <h2>Remove Link</h2>
-      <div id="removeLinkForm">
-        <input type="text" id="removeUrl" placeholder="URL to remove" />
-        <div class="table-tooltip">
-          <button onclick="removeLink()" class="danger">
-            <i class="fas fa-trash"></i> Delete
-          </button>
-          <span class="tooltiptext">Delete Entry</span>
         </div>
       </div>
     </div>

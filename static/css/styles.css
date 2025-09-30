@@ -176,6 +176,82 @@ button.danger:hover {
   background: #c0392b;
 }
 
+/* ========= Compact Menu ========= */
+.menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+  font-size: 16px;
+  color: #666;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.menu-toggle:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Compact menu that can be cloned to body */
+.menu-actions {
+  display: none;
+}
+
+.menu-actions.active {
+  transform: translateY(90%);
+  display: flex;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  gap: 6px;
+  padding: 6px;
+  z-index: 9999;
+}
+
+/* when floating (cloned into body) we remove transform because we set exact coords */
+.menu-actions.floating {
+  transform: none !important;
+  left: auto !important;
+  top: auto !important;
+}
+
+/* Button visuals inside the popup */
+.menu-actions button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: transform 0.08s ease;
+}
+
+/* center recheck visually and highlight it */
+.menu-actions button.recheck {
+  background: #2ecc71;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* delete/danger */
+.menu-actions button.danger {
+  background: #e74c3c;
+  color: #fff;
+}
+.menu-actions button:hover {
+  transform: translateY(-1px);
+}
+
+/* high z-index for floating menu to be above table / overlays */
+.menu-actions.floating {
+  z-index: 9999;
+}
+
 /* ========= Forms ========= */
 #addLinkForm,
 #removeLinkForm {
@@ -456,10 +532,18 @@ button.danger:hover {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.table-wrapper, .status-box,
-#addLinkForm, #removeLinkForm {
+.table-wrapper,
+.status-box,
+#addLinkForm,
+#removeLinkForm {
   animation: fadeUp 0.4s ease both;
 }

@@ -5,13 +5,14 @@ let PREFIXES = [];
 async function loadPrefixes() {
   const response = await fetch("/api/categories");
   const categories = await response.json();
-  PREFIXES = categories.map(c => `/${c}`);
+  PREFIXES = categories.map((c) => `/${c}`);
 }
 
-loadPrefixes()
+loadPrefixes();
 
 function actionPath(action) {
-  const prefix = PREFIXES.find(p => window.location.pathname.startsWith(p)) || "";
+  const prefix =
+    PREFIXES.find((p) => window.location.pathname.startsWith(p)) || "";
   return `${prefix}/${action}`.replace("//", "/");
 }
 
@@ -109,6 +110,25 @@ function removeLink() {
     );
 }
 
+function removeLinkByUrl(url) {
+  if (!confirm("Are you sure you want to remove this link?")) return;
+  const path = actionPath("remove");
+  fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.status === "success") location.reload();
+      else alert("Failed to remove link.");
+    })
+    .catch((err) => {
+      console.error("Error removing link:", err);
+      alert("Error removing link.");
+    });
+}
+
 function forceUpdate() {
   showSpinner("Fully updating database...");
   const path = actionPath("force_update");
@@ -137,4 +157,77 @@ function toggleSection(header) {
   header.classList.toggle("collapsed");
   const content = header.closest(".table-header").nextElementSibling;
   content.classList.toggle("collapsed");
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".menu-toggle").forEach((toggle) => {
+    toggle.addEventListener("click", function (e) {
+      e.stopPropagation();
+
+      // remove existing menus
+      document
+        .querySelectorAll(".menu-actions.active")
+        .forEach((m) => m.remove());
+
+      const container = this.closest(".menu-container");
+      const url = container.dataset.url; // grab the url from original container
+      const menu = container.querySelector(".menu-actions");
+
+      // clone menu
+      const clone = menu.cloneNode(true);
+      clone.classList.add("active");
+      clone.style.position = "absolute";
+      clone.style.visibility = "hidden"; // hide while measuring
+      document.body.appendChild(clone);
+
+      // measure & position
+      const rect = this.getBoundingClientRect();
+      const cloneRect = clone.getBoundingClientRect();
+      const top = rect.top + window.scrollY - cloneRect.height;
+      const left =
+        rect.left + window.scrollX + rect.width / 2 - cloneRect.width / 2;
+      clone.style.top = `${top}px`;
+      clone.style.left = `${left}px`;
+      clone.style.visibility = "visible";
+
+      // attach button handlers using the url from the original container
+      const editBtn = clone.querySelector("button.edit");
+      const recheckBtn = clone.querySelector("button.recheck");
+      const deleteBtn = clone.querySelector("button.danger");
+
+      if (editBtn)
+        editBtn.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          editChapter(url);
+          clone.remove();
+        });
+      if (recheckBtn)
+        recheckBtn.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          recheckChapter(url);
+          clone.remove();
+        });
+      if (deleteBtn)
+        deleteBtn.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          removeLinkByUrl(url);
+          clone.remove();
+        });
+
+      // close on outside click
+      const closeMenu = () => {
+        clone.remove();
+        document.removeEventListener("click", closeMenu);
+      };
+      setTimeout(() => document.addEventListener("click", closeMenu), 0);
+
+      // close on mouseleave
+      clone.addEventListener("mouseleave", () => clone.remove());
+    });
+  });
+});
+
+// Example handler for edit (you can adjust to your logic)
+function editChapter(url) {
+  alert("Edit clicked for " + url);
 }
