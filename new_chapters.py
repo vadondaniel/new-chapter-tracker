@@ -148,6 +148,40 @@ def add_link(category=None):
     save_data(previous_data, file_path=file_path_data)
     return jsonify({"status": "success"})
 
+def edit_link(category=None):
+    data = request.json
+    orig_url = data.get("original_url")
+    new_url = data.get("url")
+    new_name = data.get("name")
+
+    file_path_links, file_path_data, _ = get_file_paths()
+    links = load_links(file_path=file_path_links)
+
+    def normalize(u): return u.replace("http://", "").replace("https://", "")
+
+    # update links list (first match)
+    updated = False
+    for link in links:
+        if normalize(link.get("url", "")) == normalize(orig_url or ""):
+            link["url"] = new_url
+            link["name"] = new_name
+            updated = True
+            break
+    if updated:
+        save_links(links, file_path=file_path_links)
+
+    # update previous_data: move key if url changed, update name
+    previous_data = load_previous_data(file_path=file_path_data)
+    for key in list(previous_data.keys()):
+        if normalize(key) == normalize(orig_url or ""):
+            entry = previous_data.pop(key)
+            entry["name"] = new_name
+            previous_data[new_url] = entry
+            save_data(previous_data, file_path=file_path_data)
+            break
+
+    return jsonify({"status": "success"})
+
 def remove_link(category=None):
     data = request.json
     file_path_links, file_path_data, _ = get_file_paths()
@@ -174,6 +208,7 @@ app.add_url_rule("/update", endpoint="main_update", view_func=lambda: update("ma
 app.add_url_rule("/force_update", endpoint="main_force_update", view_func=lambda: force_update("main"), methods=["POST"])
 app.add_url_rule("/recheck", endpoint="main_recheck", view_func=lambda: recheck("main"), methods=["POST"])
 app.add_url_rule("/add", endpoint="main_add", view_func=lambda: add_link("main"), methods=["POST"])
+app.add_url_rule("/edit", endpoint="main_edit", view_func=lambda: edit_link("main"), methods=["POST"])
 app.add_url_rule("/remove", endpoint="main_remove", view_func=lambda: remove_link("main"), methods=["POST"])
 
 # dynamically add routes for each category
@@ -205,6 +240,12 @@ for category in CATEGORIES:
         f"/{category}/add",
         endpoint=f"{category}_add",
         view_func=lambda cat=category: add_link(cat),
+        methods=["POST"]
+    )
+    app.add_url_rule(
+        f"/{category}/edit",
+        endpoint=f"{category}_edit",
+        view_func=lambda cat=category: edit_link(cat),
         methods=["POST"]
     )
     app.add_url_rule(
