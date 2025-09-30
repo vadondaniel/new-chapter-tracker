@@ -253,36 +253,108 @@ button.danger:hover {
 }
 
 /* ========= Forms ========= */
-#addLinkForm,
-#removeLinkForm {
-  width: 100%;
-  max-width: 1100px;
-  margin: 20px 0;
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+/* Floating add button */
+.floating-add {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #2ecc71;
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 18px rgba(46, 204, 113, 0.22);
+  font-size: 20px;
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  z-index: 12000;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.floating-add:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(46, 204, 113, 0.26);
+}
+
+/* Modal */
+.modal.hidden {
+  display: none;
+}
+.modal {
+  z-index: 12001;
+}
+
+/* backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+/* modal box */
+.modal-box {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, 92%);
+  background: #fff;
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  z-index: 12002;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   box-sizing: border-box;
 }
 
-/* Inputs inside forms */
-#addLinkForm input,
-#removeLinkForm input {
-  flex: 1 1 auto;
-  min-width: 200px;
-  padding: 10px 14px;
+/* modal body inputs */
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.modal-body input {
+  padding: 10px 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 0.95rem;
+  box-sizing: border-box;
 }
 
-/* Buttons inside forms */
-#addLinkForm button,
-#removeLinkForm button {
-  flex: 0 0 auto;
+/* modal actions */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.modal-actions button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+.modal-actions button.danger {
+  background: #e74c3c;
+  color: #fff;
+}
+.modal-actions button:not(.danger) {
+  background: #2ecc71;
+  color: #fff;
+}
+
+/* small screens: full width modal-box */
+@media (max-width: 420px) {
+  .modal-box {
+    width: calc(100% - 32px);
+    left: 16px;
+    transform: translateY(-50%);
+  }
 }
 
 /* ========= Overlay & Spinner ========= */
@@ -502,22 +574,6 @@ button.danger:hover {
   table td button {
     padding: 4px 8px;
   }
-
-  /* Forms stack vertically */
-  #addLinkForm,
-  #removeLinkForm {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  #addLinkForm input,
-  #removeLinkForm input,
-  #addLinkForm button,
-  #removeLinkForm button {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-  }
 }
 
 /* ========= Status Messages ========= */
@@ -570,8 +626,6 @@ button.danger:hover {
   }
 }
 .table-wrapper,
-.status-box,
-#addLinkForm,
-#removeLinkForm {
+.status-box {
   animation: fadeUp 0.4s ease both;
 }

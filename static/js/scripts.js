@@ -307,3 +307,77 @@ document.addEventListener("DOMContentLoaded", function () {
 function editChapter(url) {
   alert("Edit clicked for " + url);
 }
+
+// Floating add modal logic
+document.addEventListener("DOMContentLoaded", function () {
+  const floatingBtn = document.getElementById("floatingAddBtn");
+  const addModal = document.getElementById("addModal");
+  const backdrop = document.getElementById("addModalBackdrop");
+  const modalName = document.getElementById("modalName");
+  const modalUrl = document.getElementById("modalUrl");
+  const modalAddBtn = document.getElementById("modalAddBtn");
+  const modalCancelBtn = document.getElementById("modalCancelBtn");
+
+  function openAddModal() {
+    addModal.classList.remove("hidden");
+    setTimeout(() => modalName.focus(), 50);
+  }
+  function closeAddModal() {
+    addModal.classList.add("hidden");
+    modalName.value = "";
+    modalUrl.value = "";
+  }
+
+  if (floatingBtn) floatingBtn.addEventListener("click", openAddModal);
+  if (backdrop) backdrop.addEventListener("click", closeAddModal);
+  if (modalCancelBtn) modalCancelBtn.addEventListener("click", closeAddModal);
+
+  // submit from modal
+  async function submitModalAdd() {
+    const name = modalName.value.trim();
+    const url = modalUrl.value.trim();
+    if (!name || !url) return alert("Please enter both name and URL.");
+    const path = actionPath("add");
+    try {
+      modalAddBtn.disabled = true;
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, url }),
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        closeAddModal();
+        location.reload();
+      } else {
+        alert("Failed to add link.");
+      }
+    } catch (err) {
+      console.error("Error adding link:", err);
+      alert("Error adding link.");
+    } finally {
+      modalAddBtn.disabled = false;
+    }
+  }
+
+  if (modalAddBtn) modalAddBtn.addEventListener("click", submitModalAdd);
+
+  // Enter key to submit inside modal
+  [modalName, modalUrl].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitModalAdd();
+      }
+      if (e.key === "Escape") {
+        closeAddModal();
+      }
+    });
+  });
+
+  // close modal on Escape from document
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !addModal.classList.contains("hidden")) closeAddModal();
+  });
+});

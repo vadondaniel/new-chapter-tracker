@@ -216,17 +216,34 @@
         </div>
         {% endif %}
       </div>
+    </div>
 
-      <h2>Add New Link</h2>
-      <div id="addLinkForm">
-        <input type="text" id="newName" placeholder="Name" />
-        <input type="text" id="newUrl" placeholder="URL" />
-        <div class="table-tooltip">
-          <button onclick="addLink()"><i class="fas fa-plus"></i> Add</button>
-          <span class="tooltiptext">Add New Entry</span>
+    <!-- Floating Add Button & Add Modal -->
+    <button id="floatingAddBtn" class="floating-add" aria-label="Add link">
+      <i class="fas fa-plus"></i>
+    </button>
+
+    <div
+      id="addModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="addModalTitle"
+    >
+      <div class="modal-backdrop" id="addModalBackdrop" tabindex="-1"></div>
+      <div class="modal-box" role="document">
+        <h2 id="addModalTitle">Add New Link</h2>
+        <div class="modal-body">
+          <input id="modalName" type="text" placeholder="Name" />
+          <input id="modalUrl" type="text" placeholder="URL" />
+        </div>
+        <div class="modal-actions">
+          <button id="modalAddBtn"><i class="fas fa-plus"></i> Add</button>
+          <button id="modalCancelBtn" class="danger">Cancel</button>
         </div>
       </div>
     </div>
+
     <!-- TODO: make progress indicator separate for the categories !-->
     <div id="overlay" class="hidden" role="alert" aria-live="assertive">
       <div id="overlay-content">
