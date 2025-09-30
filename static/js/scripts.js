@@ -236,6 +236,50 @@ document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener("resize", hideFloating);
   });
 
+  // ===== Keep-floating-tooltips-clean =====
+  // remove all floating clones and restore originals
+  function hideAllFloatingTooltips() {
+    document
+      .querySelectorAll(".tooltiptext.floating")
+      .forEach((n) => n.remove());
+    document
+      .querySelectorAll(".table-tooltip.has-floating")
+      .forEach((t) => t.classList.remove("has-floating"));
+  }
+
+  // Throttled mousemove check: if pointer is not over a tooltip trigger, hide clones.
+  (function () {
+    let scheduled = false;
+    document.addEventListener(
+      "mousemove",
+      (ev) => {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          const el = document.elementFromPoint(ev.clientX, ev.clientY);
+          if (
+            !el ||
+            (!el.closest(".table-tooltip") &&
+              !el.closest(".menu-actions") &&
+              !el.closest(".menu-toggle"))
+          ) {
+            hideAllFloatingTooltips();
+          }
+        });
+      },
+      { passive: true }
+    );
+
+    ["pointerdown", "click", "auxclick", "scroll", "resize"].forEach((ev) =>
+      document.addEventListener(ev, hideAllFloatingTooltips, { passive: true })
+    );
+    document.addEventListener("visibilitychange", hideAllFloatingTooltips);
+    window.addEventListener("pagehide", hideAllFloatingTooltips);
+    window.addEventListener("beforeunload", hideAllFloatingTooltips);
+    window.addEventListener("blur", hideAllFloatingTooltips);
+  })();
+
   document.querySelectorAll(".menu-toggle").forEach((toggle) => {
     toggle.addEventListener("click", function (e) {
       e.stopPropagation();
