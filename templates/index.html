@@ -115,7 +115,11 @@
                   </button>
                   <span class="tooltiptext">Save</span>
                 </div>
-                <div class="menu-container" data-url="{{ url }}" data-name="{{ data.name }}">
+                <div
+                  class="menu-container"
+                  data-url="{{ url }}"
+                  data-name="{{ data.name }}"
+                >
                   <button
                     class="menu-toggle"
                     aria-haspopup="true"
@@ -125,15 +129,24 @@
                   </button>
 
                   <div class="menu-actions" aria-hidden="true">
-                    <button class="edit" title="Edit">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="recheck" title="Recheck">
-                      <i class="fas fa-sync-alt"></i>
-                    </button>
-                    <button class="danger" title="Delete">
-                      <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="table-tooltip">
+                      <button class="edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <span class="tooltiptext">Edit</span>
+                    </div>
+                    <div class="table-tooltip">
+                      <button class="recheck">
+                        <i class="fas fa-sync-alt"></i>
+                      </button>
+                      <span class="tooltiptext">Recheck</span>
+                    </div>
+                    <div class="table-tooltip">
+                      <button class="danger">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <span class="tooltiptext">Delete</span>
+                    </div>
                   </div>
                 </div>
               </td>
@@ -183,7 +196,11 @@
                 {{ data.timestamp }}
               </td>
               <td style="white-space: nowrap; width: 0">
-                <div class="menu-container" data-url="{{ url }}" data-name="{{ data.name }}">
+                <div
+                  class="menu-container"
+                  data-url="{{ url }}"
+                  data-name="{{ data.name }}"
+                >
                   <button
                     class="menu-toggle"
                     aria-haspopup="true"
@@ -193,15 +210,24 @@
                   </button>
 
                   <div class="menu-actions" aria-hidden="true">
-                    <button class="edit" title="Edit">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="recheck" title="Recheck">
-                      <i class="fas fa-sync-alt"></i>
-                    </button>
-                    <button class="danger" title="Delete">
-                      <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="table-tooltip">
+                      <button class="edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <span class="tooltiptext">Edit</span>
+                    </div>
+                    <div class="table-tooltip">
+                      <button class="recheck">
+                        <i class="fas fa-sync-alt"></i>
+                      </button>
+                      <span class="tooltiptext">Recheck</span>
+                    </div>
+                    <div class="table-tooltip">
+                      <button class="danger">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <span class="tooltiptext">Delete</span>
+                    </div>
                   </div>
                 </div>
               </td>
