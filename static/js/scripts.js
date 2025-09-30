@@ -160,6 +160,82 @@ function toggleSection(header) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  // show hostname in tooltip (existing)
+  document.querySelectorAll(".domain-tooltip").forEach((link) => {
+    try {
+      const urlObj = new URL(link.href);
+      let hostname = urlObj.hostname;
+      if (hostname.startsWith("www.")) hostname = hostname.slice(4);
+      link.parentElement.querySelector(".tooltiptext").textContent = hostname;
+    } catch (e) {
+      link.parentElement.querySelector(".tooltiptext").textContent =
+        "Invalid URL";
+    }
+  });
+
+  // --- NEW: floating tooltips for .table-tooltip to avoid clipping by table wrapper ---
+  document.querySelectorAll(".table-tooltip").forEach((trigger) => {
+    const tip = trigger.querySelector(".tooltiptext");
+    if (!tip) return;
+    let floating = null;
+
+    const showFloating = () => {
+      // clone and append to body
+      floating = tip.cloneNode(true);
+      floating.classList.add("floating");
+      floating.style.position = "absolute";
+      floating.style.visibility = "hidden";
+      document.body.appendChild(floating);
+
+      // mark trigger so original tooltip is suppressed via CSS
+      trigger.classList.add("has-floating");
+
+      // measure
+      const rect = trigger.getBoundingClientRect();
+      const fRect = floating.getBoundingClientRect();
+
+      // try place above centered
+      const gap = 6;
+      let top = rect.top + window.scrollY - fRect.height - gap;
+      let left = rect.left + window.scrollX + rect.width / 2 - fRect.width / 2;
+
+      // clamp horizontally to viewport with small padding
+      const pad = 8;
+      const maxLeft =
+        window.scrollX +
+        document.documentElement.clientWidth -
+        fRect.width -
+        pad;
+      left = Math.max(window.scrollX + pad, Math.min(left, maxLeft));
+
+      // if not enough space above, place below
+      if (top < window.scrollY + pad) {
+        top = rect.bottom + window.scrollY + gap;
+      }
+
+      floating.style.top = `${top}px`;
+      floating.style.left = `${left}px`;
+      floating.style.visibility = "visible";
+    };
+
+    const hideFloating = () => {
+      if (floating) {
+        floating.remove();
+        floating = null;
+        // restore original tooltip visibility
+        trigger.classList.remove("has-floating");
+      }
+    };
+
+    trigger.addEventListener("mouseenter", showFloating);
+    trigger.addEventListener("mouseleave", hideFloating);
+    trigger.addEventListener("focusin", showFloating);
+    trigger.addEventListener("focusout", hideFloating);
+    // remove on resize/scroll to avoid stuck elements
+    window.addEventListener("scroll", hideFloating, { passive: true });
+    window.addEventListener("resize", hideFloating);
+  });
+
   document.querySelectorAll(".menu-toggle").forEach((toggle) => {
     toggle.addEventListener("click", function (e) {
       e.stopPropagation();

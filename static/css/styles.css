@@ -443,6 +443,34 @@ button.danger:hover {
   white-space: nowrap;
 }
 
+/* floating tooltip (moved to body to avoid clipping) */
+.tooltiptext.floating {
+  position: absolute;
+  transform: none !important;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.92);
+  color: #fff;
+  font-size: 0 nine rem; /* keep small and single-line */
+  z-index: 10000;
+  pointer-events: none; /* avoid interfering with mouse events */
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ensure the original inline tooltip is still hidden (we use the floating one) */
+.table-tooltip .tooltiptext {
+  /* keep for non-cloned fallback, but don't overlap */
+  pointer-events: none;
+}
+
+/* when a floating clone is used, hide the original inline tooltip to avoid duplicates */
+.table-tooltip.has-floating .tooltiptext {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
 /* Ensure tables are scrollable on small screens */
 .table-wrapper {
   width: 100%;
