@@ -361,15 +361,24 @@ document.addEventListener("DOMContentLoaded", function () {
   const modalUrl = document.getElementById("modalUrl");
   const modalAddBtn = document.getElementById("modalAddBtn");
   const modalCancelBtn = document.getElementById("modalCancelBtn");
+  const modalTitle = document.getElementById("addModalTitle");
 
   function openAddModal() {
-    addModal.classList.remove("hidden");
-    setTimeout(() => modalName.focus(), 50);
+      // set title based on mode
+      if (modalAddBtn && modalAddBtn.dataset.mode === "edit") {
+        modalTitle.textContent = "Edit Link";
+      } else {
+        modalTitle.textContent = "Add New Link";
+      }
+      addModal.classList.remove("hidden");
+      setTimeout(() => modalName.focus(), 50);
   }
   function closeAddModal() {
-    addModal.classList.add("hidden");
-    modalName.value = "";
-    modalUrl.value = "";
+      addModal.classList.add("hidden");
+      modalName.value = "";
+      modalUrl.value = "";
+      // reset title to default
+      if (modalTitle) modalTitle.textContent = "Add New Link";
   }
 
   if (floatingBtn) floatingBtn.addEventListener("click", openAddModal);
@@ -431,6 +440,7 @@ document.addEventListener("DOMContentLoaded", function () {
     modalAddBtn.dataset.mode = "edit";
     modalAddBtn.dataset.origUrl = url || "";
     modalAddBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+    modalTitle.textContent = "Edit Link";
     openAddModal();
   };
 
@@ -442,6 +452,7 @@ document.addEventListener("DOMContentLoaded", function () {
     delete modalAddBtn.dataset.mode;
     delete modalAddBtn.dataset.origUrl;
     modalAddBtn.innerHTML = '<i class="fas fa-plus"></i> Add';
+    if (modalTitle) modalTitle.textContent = "Add New Link";
   }
 
   // Enter key to submit inside modal
