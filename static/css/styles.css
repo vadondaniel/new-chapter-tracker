@@ -457,6 +457,29 @@ button.danger:hover {
   }
 }
 
+/* ========= Link Styling ========= */
+a {
+  color: #2ecc71;
+  text-decoration: none;
+  font-weight: 600;
+  transition: text-shadow 0.1s ease;
+}
+
+a:hover,
+a:focus {
+  color: #27ae60;
+  text-decoration: underline;
+  text-shadow: 0 0 2px rgba(46, 204, 113, 0.3);
+}
+
+a:active {
+  color: #219150;
+}
+
+a:visited {
+  color: #2ecc71;
+}
+
 /* ========= Tooltip ========= */
 /* Generic tooltip container */
 .tooltip,
