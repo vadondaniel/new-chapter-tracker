@@ -163,12 +163,12 @@
       </div>
 
       <div class="table-header">
-        <h2 class="toggle" onclick="toggleSection(this)">
+        <h2 class="toggle collapsed" onclick="toggleSection(this)">
           No New Chapters <span class="badge">{{ same_data|length }}</span>
         </h2>
       </div>
 
-      <div class="collapsible-content">
+      <div class="collapsible-content collapsed">
         {% if same_data %}
         <div class="table-wrapper">
           <table border="1">
