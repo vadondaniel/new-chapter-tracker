@@ -298,6 +298,64 @@ document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener("resize", hideFloating);
   });
 
+  const attachErrorTooltip = (trigger) => {
+    const tip = trigger.querySelector(".tooltiptext.error-tooltiptext");
+    if (!tip) return;
+
+    const floating = tip.cloneNode(true);
+    floating.classList.remove("tooltiptext");
+    floating.classList.add("floating-error-tooltip");
+    floating.style.position = "absolute";
+    document.body.appendChild(floating);
+
+    const positionFloating = () => {
+      const rect = trigger.getBoundingClientRect();
+      const fRect = floating.getBoundingClientRect();
+      const gap = 6;
+      let top = rect.top + window.scrollY - fRect.height - gap;
+      let left = rect.left + window.scrollX + rect.width / 2 - fRect.width / 2;
+      const pad = 8;
+      const maxLeft =
+        window.scrollX +
+        document.documentElement.clientWidth -
+        fRect.width -
+        pad;
+      left = Math.max(window.scrollX + pad, Math.min(left, maxLeft));
+
+      if (top < window.scrollY + pad) {
+        top = rect.bottom + window.scrollY + gap;
+      }
+
+      floating.style.top = `${top}px`;
+      floating.style.left = `${left}px`;
+    };
+
+    const showFloating = () => {
+      positionFloating();
+      floating.style.visibility = "visible";
+      floating.style.opacity = "1";
+    };
+
+    const hideFloating = () => {
+      floating.style.visibility = "hidden";
+      floating.style.opacity = "0";
+    };
+
+    trigger.addEventListener("mouseenter", showFloating);
+    trigger.addEventListener("mouseleave", hideFloating);
+    trigger.addEventListener("focusin", showFloating);
+    trigger.addEventListener("focusout", hideFloating);
+    window.addEventListener("scroll", hideFloating, { passive: true });
+    window.addEventListener("resize", () => {
+      positionFloating();
+      hideFloating();
+    });
+  };
+
+  document
+    .querySelectorAll(".tooltip.timestamp-text.error-timestamp")
+    .forEach(attachErrorTooltip);
+
   // ===== Keep-floating-tooltips-clean =====
   // remove all floating clones and restore originals
   function hideAllFloatingTooltips() {
@@ -307,6 +365,12 @@ document.addEventListener("DOMContentLoaded", function () {
     document
       .querySelectorAll(".table-tooltip.has-floating")
       .forEach((t) => t.classList.remove("has-floating"));
+    document
+      .querySelectorAll(".floating-error-tooltip")
+      .forEach((n) => {
+        n.style.visibility = "hidden";
+        n.style.opacity = "0";
+      });
   }
 
   // Throttled mousemove check: if pointer is not over a tooltip trigger, hide clones.
@@ -320,12 +384,17 @@ document.addEventListener("DOMContentLoaded", function () {
         requestAnimationFrame(() => {
           scheduled = false;
           const el = document.elementFromPoint(ev.clientX, ev.clientY);
-          if (
-            !el ||
-            (!el.closest(".table-tooltip") &&
-              !el.closest(".menu-actions") &&
-              !el.closest(".menu-toggle"))
-          ) {
+          let isTooltipArea = false;
+          if (el) {
+            isTooltipArea =
+              el.closest(".table-tooltip") ||
+              el.closest(".tooltip.timestamp-text") ||
+              el.closest(".tooltiptext.error-tooltiptext") ||
+              el.closest(".floating-error-tooltip") ||
+              el.closest(".menu-actions") ||
+              el.closest(".menu-toggle");
+          }
+          if (!el || !isTooltipArea) {
             hideAllFloatingTooltips();
           }
         });

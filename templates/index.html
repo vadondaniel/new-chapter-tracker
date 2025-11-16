@@ -105,8 +105,17 @@
               </td>
               <td>{{ data.last_saved }}</td>
               <td style="font-weight: 600;">{{ data.last_found }}</td>
-              <td style="white-space: nowrap; width: 0">
-                {{ data.timestamp }}
+              <td
+                style="white-space: nowrap; width: 0"
+              >
+                <span
+                  class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}"
+                >
+                  {{ data.timestamp }}
+                  {% if data.last_error %}
+                  <span class="tooltiptext error-tooltiptext">{{ data.last_error }}</span>
+                  {% endif %}
+                </span>
               </td>
               <td style="white-space: nowrap; width: 0">
                 <div class="table-tooltip">
@@ -196,7 +205,14 @@
                 style="white-space: nowrap; width: 0"
                 TODO="tooltip to show exact date, otherwise, moment(data.timestamp).fromNow() ...or just relative for today/yesterday"
               >
-                {{ data.timestamp }}
+                <span
+                  class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}"
+                >
+                  {{ data.timestamp }}
+                  {% if data.last_error %}
+                  <span class="tooltiptext error-tooltiptext">{{ data.last_error }}</span>
+                  {% endif %}
+                </span>
               </td>
               <td style="white-space: nowrap; width: 0">
                 <div
