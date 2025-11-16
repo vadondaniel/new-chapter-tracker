@@ -163,11 +163,12 @@ def scrape_all_links(links, previous_data, force_update=False):
             try:
                 scraped_text, timestamp = future.result()
                 entry = previous_data.get(link["url"], {})
+                free_flag = link.get("free_only", entry.get("free_only", True))
                 new_data[link["url"]] = {
                     "name": link["name"],
                     "last_found": scraped_text,
                     "timestamp": timestamp,
-                    "free_only": entry.get("free_only", True)
+                    "free_only": free_flag,
                 }
                 if socketio:
                     socketio.emit('update_progress', {'current': i, 'total': total_links})

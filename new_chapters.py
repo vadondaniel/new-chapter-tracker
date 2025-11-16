@@ -1,17 +1,14 @@
 import os
 import logging
 from datetime import datetime
+from pathlib import Path
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from scraping import scrape_website, scrape_all_links
 from config import CATEGORIES
-from data_store import (
-    CategoryStorage,
-    DEFAULT_FREE_ONLY,
-    DEFAULT_UPDATE_FREQUENCY,
-)
+from db_store import ChapterDatabase, DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY
 
 logging.basicConfig(level=logging.INFO)
 
@@ -33,6 +30,9 @@ for category in CATEGORIES:
         "data": os.path.join(DATA_DIR, f"{category}_scraped_data.json"),
     }
 
+DB_PATH = Path(DATA_DIR) / "chapters.db"
+db = ChapterDatabase(DB_PATH)
+
 app = Flask(__name__)
 socketio = SocketIO(app)
 update_in_progress = False
@@ -51,12 +51,6 @@ def resolve_category(category=None):
         if path.startswith(f"/{candidate}"):
             return candidate
     return "main"
-
-
-def get_category_storage(category=None):
-    resolved = resolve_category(category)
-    paths = FILE_PATHS[resolved]
-    return CategoryStorage(paths["links"], paths["data"]), resolved
 
 
 def parse_free_only(value, default):
@@ -109,10 +103,9 @@ def force_update_job(category="main"):
     global last_full_update
     with app.app_context():
         logging.info(f"Starting scheduled force update for {category}...")
-        store = CategoryStorage(FILE_PATHS[category]["links"], FILE_PATHS[category]["data"])
-        links = store.read_links()
-        new_data = scrape_all_links(links, store.read_data(), force_update=True)
-        store.merge_scraped(new_data)
+        links = db.get_links(category)
+        new_data = scrape_all_links(links, db.get_scraped_data(category), force_update=True)
+        db.merge_scraped(new_data)
         last_full_update[category] = datetime.now().isoformat()
         logging.info(f"Scheduled force update for {category} completed.")
 
@@ -131,8 +124,8 @@ def schedule_updates():
     
 # --------------------- View Logic ---------------------
 def index(category=None):
-    store, update_type = get_category_storage(category)
-    previous_data = store.read_data()
+    update_type = resolve_category(category)
+    previous_data = db.get_scraped_data(update_type)
 
     differences = {url: data for url, data in previous_data.items() if data["last_found"] != data["last_saved"]}
     same_data = {url: data for url, data in previous_data.items() if data["last_found"] == data["last_saved"]}
@@ -151,33 +144,25 @@ def index(category=None):
 
 def update(category=None):
     data = request.json
-    store, _ = get_category_storage(category)
-    previous_data = store.read_data()
-    if data["url"] in previous_data:
-        previous_data[data["url"]]["last_saved"] = previous_data[data["url"]]["last_found"]
-        store.save_data()
+    db.mark_saved(data["url"])
     return jsonify({"status": "success"})
 
 def force_update(category=None):
-    _, update_type = get_category_storage(category)
+    update_type = resolve_category(category)
     socketio.start_background_task(force_update_job, update_type)
     return jsonify({"status": "started"})
 
 def recheck(category=None):
     data = request.json
-    store, _ = get_category_storage(category)
-    previous_data = store.read_data()
+    update_type = resolve_category(category)
+    previous_data = db.get_scraped_data(update_type)
     if data["url"] in previous_data:
         latest_chapter, timestamp = scrape_website(data["url"], previous_data, force_update=True)
-        previous_data[data["url"]]["last_found"] = latest_chapter
-        previous_data[data["url"]]["timestamp"] = timestamp
-        store.save_data()
+        db.update_scraped_entry(data["url"], latest_chapter, timestamp)
     return jsonify({"status": "success"})
 
 def add_link(category=None):
     data = request.json
-    store, _ = get_category_storage(category)
-    links = store.read_links()
     freq, free_only = get_link_metadata(data)
     new_entry = {
         "name": data["name"],
@@ -185,18 +170,17 @@ def add_link(category=None):
         "update_frequency": freq,
         "free_only": free_only,
     }
-    if not any(link["url"] == new_entry["url"] for link in links):
-        links.append(new_entry)
-        store.save_links()
-    previous_data = store.read_data()
+    update_type = resolve_category(category)
+    db.add_link(
+        new_entry["name"],
+        new_entry["url"],
+        update_type,
+        new_entry["update_frequency"],
+        new_entry["free_only"],
+    )
+    previous_data = db.get_scraped_data(update_type)
     latest_chapter, timestamp = scrape_website(new_entry["url"], previous_data, force_update=True)
-    previous_data[new_entry["url"]] = {
-        "name": new_entry["name"],
-        "last_saved": "N/A",
-        "last_found": latest_chapter,
-        "timestamp": timestamp
-    }
-    store.save_data()
+    db.update_scraped_entry(new_entry["url"], latest_chapter, timestamp)
     return jsonify({"status": "success"})
 
 def edit_link(category=None):
@@ -205,52 +189,29 @@ def edit_link(category=None):
     new_url = data.get("url")
     new_name = data.get("name")
 
-    store, _ = get_category_storage(category)
-    links = store.read_links()
+    update_type = resolve_category(category)
+    links = db.get_links(update_type)
 
     def normalize(u): return u.replace("http://", "").replace("https://", "")
-
     updated = False
     for link in links:
         if normalize(link.get("url", "")) == normalize(orig_url or ""):
             freq, free_only = get_link_metadata(data, link)
-            link["url"] = new_url
-            link["name"] = new_name
-            link["update_frequency"] = freq
-            link["free_only"] = free_only
+            db.update_link(
+                orig_url,
+                new_url,
+                new_name,
+                freq,
+                free_only,
+            )
             updated = True
             break
-    if updated:
-        store.save_links()
-
-    previous_data = store.read_data()
-    data_modified = False
-    for key in list(previous_data.keys()):
-        if normalize(key) == normalize(orig_url or ""):
-            entry = previous_data.pop(key)
-            entry["name"] = new_name
-            previous_data[new_url] = entry
-            data_modified = True
-            break
-    if data_modified:
-        store.save_data()
 
     return jsonify({"status": "success"})
 
 def remove_link(category=None):
     data = request.json
-    store, _ = get_category_storage(category)
-    links = store.read_links()
-    def normalize_url(url): return url.replace("http://", "").replace("https://", "")
-    input_url = normalize_url(data["url"])
-    links = [link for link in links if normalize_url(link["url"]) != input_url]
-    store.save_links()
-    previous_data = store.read_data()
-    keys_to_remove = [url for url in previous_data if normalize_url(url) == input_url]
-    for url in keys_to_remove:
-        del previous_data[url]
-    if keys_to_remove:
-        store.save_data()
+    db.remove_link(data["url"])
     return jsonify({"status": "success"})
 
 # --------------------- Routes ---------------------
@@ -322,7 +283,7 @@ if __name__ == "__main__":
     #     force_update_job(paths["links"], paths["data"], category)
 
     # Option B: Kick off background tasks at startup (server starts immediately)
-    for category, paths in FILE_PATHS.items():
-        socketio.start_background_task(force_update_job, paths["links"], paths["data"], category)
+    for category in FILE_PATHS.keys():
+        socketio.start_background_task(force_update_job, category)
 
     app.run(host="0.0.0.0", debug=False, port=555)
