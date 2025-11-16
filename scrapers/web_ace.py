@@ -8,8 +8,6 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from scraper_utils import needs_update
-
 DOMAINS = ["web-ace.jp"]
 SUPPORTS_FREE_TOGGLE = False
 
@@ -20,17 +18,16 @@ def _extract_series_id(url: str) -> Optional[str]:
     match = re.search(r"/contents/(\d+)", path)
     return match.group(1) if match else None
 
-def scrape(url, previous_data, force_update=False):
-    if not needs_update(url, previous_data, 10, force_update):
-        return previous_data[url]["last_found"], previous_data[url]["timestamp"]
-
-    latest_chapter = "No new chapter found"
+def scrape(url, free_only=False):
+    latest_chapter = "No chapters found"
     timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
+    success = False
+    error = None
 
     series_id = _extract_series_id(url)
     if not series_id:
         logging.warning("Unable to parse series ID from %s", url)
-        return latest_chapter, timestamp
+        return latest_chapter, timestamp, False, "Unable to parse series ID"
 
     rss_url = RSS_TEMPLATE.format(series_id=series_id)
 
@@ -40,7 +37,7 @@ def scrape(url, previous_data, force_update=False):
         soup = BeautifulSoup(response.content, "xml")
         latest_item = soup.find("item")
         if not latest_item:
-            return latest_chapter, timestamp
+            return latest_chapter, timestamp, False, "No RSS items"
 
         title_tag = latest_item.find("title")
         if title_tag and title_tag.text:
@@ -54,9 +51,12 @@ def scrape(url, previous_data, force_update=False):
                 parsed_date = parsedate_to_datetime(pub_date_tag.text.strip())
             except (TypeError, ValueError) as err:
                 logging.warning("Unable to parse pubDate for %s: %s", url, err)
+                error = f"Unable to parse pubDate: {err}"
             else:
                 timestamp = parsed_date.strftime("%Y/%m/%d")
+        success = True
+        return latest_chapter, timestamp, success, error
     except requests.RequestException as exc:
         logging.warning("Failed to fetch RSS feed %s: %s", rss_url, exc)
 
-    return latest_chapter, timestamp
+    return latest_chapter, timestamp, success, error

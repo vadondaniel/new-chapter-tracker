@@ -1,17 +1,16 @@
 import datetime
+import time
 
 import requests
 from bs4 import BeautifulSoup
 
-from scraper_utils import needs_update, convert_to_rss_url
+from scraper_utils import convert_to_rss_url
 
 DOMAINS = ["nyaa.si"]
 SUPPORTS_FREE_TOGGLE = False
 
-def scrape(url, previous_data, force_update=False):
-    if not needs_update(url, previous_data, 2, force_update):
-        return previous_data[url]["last_found"], previous_data[url]["timestamp"]
-
+def scrape(url, free_only=False):
+    timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
     rss_url = convert_to_rss_url(url)
     max_retries = 3
     delay = 2
@@ -22,16 +21,23 @@ def scrape(url, previous_data, force_update=False):
             break
         except requests.RequestException as e:
             if attempt < max_retries - 1:
-                datetime.time.sleep(delay)
+                time.sleep(delay)
             else:
-                return f"Request failed after {max_retries} retries: {e}", datetime.datetime.now().strftime("%Y/%m/%d")
+                return (
+                    f"Request failed after {max_retries} retries: {e}",
+                    timestamp,
+                    False,
+                    str(e),
+                )
 
     soup = BeautifulSoup(response.content, "xml")
     latest_item = soup.find("item")
     if latest_item:
         title = latest_item.find("title").get_text(strip=True)
         pub_date = latest_item.find("pubDate").get_text(strip=True)
-        timestamp = datetime.datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %z").strftime("%Y/%m/%d")
-        return title, timestamp
+        timestamp = datetime.datetime.strptime(
+            pub_date, "%a, %d %b %Y %H:%M:%S %z"
+        ).strftime("%Y/%m/%d")
+        return title, timestamp, True, None
 
-    return "No new torrent found", datetime.datetime.now().strftime("%Y/%m/%d")
+    return "No new torrent found", timestamp, False, "No RSS item found"

@@ -3,20 +3,19 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 
-from scraper_utils import needs_update
-
 DOMAINS = ["royalroad.com"]
 SUPPORTS_FREE_TOGGLE = False
 
-def scrape(url, previous_data, force_update=False):
-    if not needs_update(url, previous_data, 2, force_update):
-        return previous_data[url]["last_found"], previous_data[url]["timestamp"]
-
+def scrape(url, free_only=False):
+    success = False
+    error = None
+    timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
     url_parts = url.split("/")
     if len(url_parts) > 4:
         api_url = f"https://www.royalroad.com/fiction/syndication/{url_parts[4]}"
     else:
-        return "Invalid RoyalRoad URL", datetime.datetime.now().strftime("%Y/%m/%d")
+        error = "Invalid RoyalRoad URL"
+        return "Invalid RoyalRoad URL", timestamp, False, error
 
     response = requests.get(api_url).content
     soup = BeautifulSoup(response, "xml")
@@ -30,6 +29,7 @@ def scrape(url, previous_data, force_update=False):
         timestamp = datetime.datetime.strptime(
             pub_date, "%a, %d %b %Y %H:%M:%S %Z"
         ).strftime("%Y/%m/%d")
-        return chapter_title, timestamp
+        success = True
+        return chapter_title, timestamp, success, None
 
-    return "No new chapter found", datetime.datetime.now().strftime("%Y/%m/%d")
+    return "No chapters found", timestamp, False, "No chapters found"

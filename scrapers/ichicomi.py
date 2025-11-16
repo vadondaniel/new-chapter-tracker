@@ -6,22 +6,18 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from scraper_utils import needs_update
-
 DOMAINS = ["ichicomi.com"]
 SUPPORTS_FREE_TOGGLE = False
 
 FREE_ONLY_DEFAULT = True
 
-def scrape(url, previous_data, force_update=False):
-    if not needs_update(url, previous_data, 10, force_update):
-        return previous_data[url]["last_found"], previous_data[url]["timestamp"]
-
-    latest_chapter = "No new chapter found"
+def scrape(url, free_only=False):
+    latest_chapter = "No chapters found"
     timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
+    success = False
+    error = None
 
-    entry = previous_data.get(url, {})
-    free_only = entry.get("free_only", FREE_ONLY_DEFAULT)
+    free_only = free_only if free_only is not None else FREE_ONLY_DEFAULT
 
     HEADERS = {
         "User-Agent": (
@@ -37,8 +33,9 @@ def scrape(url, previous_data, force_update=False):
         soup = BeautifulSoup(page.text, "html.parser")
         rss_link = soup.find("link", rel="alternate", type="application/rss+xml")
         if not rss_link or not rss_link.get("href"):
-            logging.warning("RSS feed link missing for %s, cannot check for new chapters", url)
-            return latest_chapter, timestamp
+            msg = "RSS feed link missing"
+            logging.warning("%s for %s, cannot check for new chapters", msg, url)
+            return latest_chapter, timestamp, False, msg
 
         rss_url = urljoin("https://ichicomi.com", rss_link["href"])
         rss_page = requests.get(rss_url, headers=HEADERS, timeout=10)
@@ -55,8 +52,9 @@ def scrape(url, previous_data, force_update=False):
             selected_item = items[0] if items else None
 
         if not selected_item:
-            logging.info("No free chapter item found yet for %s", url)
-            return latest_chapter, timestamp
+            msg = "No chapter matching free_only criteria"
+            logging.info("%s for %s", msg, url)
+            return latest_chapter, timestamp, False, msg
 
         item_title = selected_item.find("title")
         if item_title and item_title.text:
@@ -79,9 +77,12 @@ def scrape(url, previous_data, force_update=False):
                 )
             else:
                 timestamp = parsed_date.strftime("%Y/%m/%d")
+        success = True
     except requests.RequestException as rss_error:
-        logging.warning("Failed to fetch RSS feed for %s: %s", url, rss_error)
+        error = f"Failed to fetch RSS feed: {rss_error}"
+        logging.warning(error)
     except Exception as e:
-        logging.error(f"Error scraping {url}: {e}")
+        error = f"Error scraping {url}: {e}"
+        logging.error(error)
 
-    return latest_chapter, timestamp
+    return latest_chapter, timestamp, success, error

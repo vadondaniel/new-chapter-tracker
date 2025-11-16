@@ -1,10 +1,7 @@
 import importlib
 import pkgutil
-import os
-import json
 import logging
 import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import scrapers
 from selenium import webdriver
@@ -12,49 +9,14 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 
+from scraper_utils import needs_update
+
+from db_store import DEFAULT_UPDATE_FREQUENCY
+
 logging.basicConfig(level=logging.INFO)
 
 update_in_progress = False
 socketio = None  # Set externally
-
-# --------------------- JSON Helpers ---------------------
-def load_json(file_path, default):
-    if not os.path.exists(file_path):
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(default, f)
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return data if isinstance(data, type(default)) else default
-
-def save_json(data, file_path):
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4)
-        
-def load_links(file_path):
-    if not os.path.exists(file_path):
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump([], f)
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-        if isinstance(data, list):
-            return data
-    return []
-
-def save_links(links, file_path):
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(links, f, indent=4)
-
-def save_data(data, file_path):
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4)
-
-def load_previous_data(file_path):
-    if not os.path.exists(file_path):
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump({}, f)
-    with open(file_path, "r", encoding="utf-8") as f:
-        return json.load(f)
-    return {}
 
 # --------------------- Selenium Manager ---------------------
 class BrowserManager:
@@ -143,52 +105,103 @@ def load_scraper_plugins():
 
 SCRAPERS = load_scraper_plugins()
 
-def scrape_website(url, previous_data, force_update=False):
+
+def entry_due_for_scrape(link, entry, force_update=False):
+    if force_update or not entry or entry.get("last_found") == "No data" or not entry.get("timestamp"):
+        return True
+    freq = link.get("update_frequency", DEFAULT_UPDATE_FREQUENCY)
+    return needs_update(link["url"], {link["url"]: entry}, freq, False)
+
+
+def process_link(link, entry, force_update=False):
+    if not entry_due_for_scrape(link, entry, force_update):
+        free_flag = link.get("free_only", entry.get("free_only", True))
+        return (
+            {
+                "name": link.get("name", entry.get("name", "Unknown")),
+                "last_found": entry.get("last_found", "No data"),
+                "timestamp": entry.get("timestamp", datetime.datetime.now().strftime("%Y/%m/%d")),
+                "free_only": free_flag,
+            },
+            None,
+        )
+
+    try:
+        result = scrape_website(link)
+    except Exception as exc:
+        logging.error("Error scraping %s: %s", link["url"], exc)
+        return None, {link["url"]: {"error": str(exc)}}
+    chapter, timestamp, success, error = normalize_scrape_result(result)
+    if success:
+        return (
+            {
+                "name": link.get("name", entry.get("name", "Unknown")),
+                "last_found": chapter,
+                "timestamp": timestamp,
+                "free_only": link.get("free_only", entry.get("free_only", True)),
+            },
+            None,
+        )
+    return None, {link["url"]: {"error": error or f"No data returned from {link['url']}",}}
+
+def scrape_website(link):
+    url = link["url"]
     for domain, plugin in SCRAPERS.items():
         if domain in url:
-            return plugin["scraper"](url, previous_data, force_update)
-    return "Unsupported website", datetime.datetime.now().strftime("%Y/%m/%d")
+            return plugin["scraper"](url, free_only=link.get("free_only", False))
+    return (
+        "Unsupported website",
+        datetime.datetime.now().strftime("%Y/%m/%d"),
+        False,
+        "unsupported",
+    )
 
 # --------------------- Main Scraper ---------------------
+def normalize_scrape_result(result):
+    if isinstance(result, dict):
+        chapter = result.get("last_found", "No chapters found")
+        timestamp = result.get("timestamp", datetime.datetime.now().strftime("%Y/%m/%d"))
+        success = result.get("success", True)
+        error = result.get("error")
+    elif isinstance(result, (list, tuple)):
+        chapter, timestamp = result[0], result[1]
+        success = len(result) < 3 or bool(result[2])
+        error = result[3] if len(result) > 3 else None
+    else:
+        chapter, timestamp, success, error = (
+            str(result),
+            datetime.datetime.now().strftime("%Y/%m/%d"),
+            True,
+            None,
+        )
+    return chapter, timestamp, success, error
+
+
 def scrape_all_links(links, previous_data, force_update=False):
     global update_in_progress
     update_in_progress = True
     new_data = {}
+    failures = {}
     total_links = len(links)
+    processed = 0
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(scrape_website, link["url"], previous_data, force_update): link for link in links}
-        for i, future in enumerate(as_completed(futures), 1):
-            link = futures[future]
-            try:
-                scraped_text, timestamp = future.result()
-                entry = previous_data.get(link["url"], {})
-                free_flag = link.get("free_only", entry.get("free_only", True))
-                new_data[link["url"]] = {
-                    "name": link["name"],
-                    "last_found": scraped_text,
-                    "timestamp": timestamp,
-                    "free_only": free_flag,
-                }
-                if socketio:
-                    socketio.emit('update_progress', {'current': i, 'total': total_links})
-            except Exception as e:
-                logging.error(f"Error scraping {link['url']}: {e}")
+    for link in links:
+        entry = previous_data.get(link["url"], {})
+        data, failure = process_link(link, entry, force_update)
+        processed += 1
+        if socketio:
+            socketio.emit("update_progress", {"current": processed, "total": total_links})
+        if data:
+            new_data[link["url"]] = data
+        if failure:
+            failures.update(failure)
 
     if socketio:
-        socketio.emit('update_complete')
+        socketio.emit("update_complete")
     update_in_progress = False
     logging.info("Scraping all links completed.")
-    return new_data
+    return new_data, failures
 
 # --------------------- Pipeline ---------------------
-def scrape_pipeline(links_file, data_file, force_update=False):
-    links = load_json(links_file, default=[])
-    previous_data = load_json(data_file, default={})
-    new_data = scrape_all_links(links, previous_data, force_update)
-    save_json(new_data, data_file)
-    return new_data
-
-# --------------------- Clean Shutdown ---------------------
 def shutdown_scraper():
     BrowserManager.quit_driver()

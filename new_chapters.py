@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from scraping import scrape_website, scrape_all_links
+from scraping import process_link, scrape_all_links
 from config import CATEGORIES
 from db_store import ChapterDatabase, DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY
 
@@ -99,25 +99,27 @@ def get_link_metadata(payload, existing=None):
     return freq, free_only
 
 # --------------------- Background Jobs ---------------------
-def force_update_job(category="main"):
+def run_update_job(category="main", force_update=False):
     global last_full_update
     with app.app_context():
-        logging.info(f"Starting scheduled force update for {category}...")
+        logging.info(f"Starting scheduled update for {category} (force={force_update})...")
         links = db.get_links(category)
-        new_data = scrape_all_links(links, db.get_scraped_data(category), force_update=True)
+        current_data = db.get_scraped_data(category)
+        new_data, failures = scrape_all_links(links, current_data, force_update=force_update)
         db.merge_scraped(new_data)
+        db.record_failures(failures)
         last_full_update[category] = datetime.now().isoformat()
-        logging.info(f"Scheduled force update for {category} completed.")
+        logging.info(f"Scheduled update for {category} completed.")
 
 def schedule_updates():
     scheduler = BackgroundScheduler(job_defaults={'max_instances': 1})
     scheduler.add_job(
-        lambda: force_update_job("main"),
+        lambda: run_update_job("main"),
         'interval', hours=1
     )
     for category in CATEGORIES:
         scheduler.add_job(
-            lambda c=category: force_update_job(c),
+            lambda c=category: run_update_job(c),
             'interval', hours=5
         )
     scheduler.start()
@@ -149,16 +151,28 @@ def update(category=None):
 
 def force_update(category=None):
     update_type = resolve_category(category)
-    socketio.start_background_task(force_update_job, update_type)
+    socketio.start_background_task(run_update_job, update_type, True)
     return jsonify({"status": "started"})
 
 def recheck(category=None):
     data = request.json
     update_type = resolve_category(category)
     previous_data = db.get_scraped_data(update_type)
-    if data["url"] in previous_data:
-        latest_chapter, timestamp = scrape_website(data["url"], previous_data, force_update=True)
-        db.update_scraped_entry(data["url"], latest_chapter, timestamp)
+    entry = previous_data.get(data["url"])
+    if not entry:
+        return jsonify({"status": "missing"})
+
+    link = {
+        "url": data["url"],
+        "free_only": entry.get("free_only", False),
+        "name": entry.get("name", "Unknown"),
+        "update_frequency": entry.get("update_frequency", DEFAULT_UPDATE_FREQUENCY),
+    }
+    data_entry, failure = process_link(link, entry, force_update=True)
+    if data_entry:
+        db.merge_scraped({link["url"]: data_entry})
+    if failure:
+        db.record_failures(failure)
     return jsonify({"status": "success"})
 
 def add_link(category=None):
@@ -178,9 +192,17 @@ def add_link(category=None):
         new_entry["update_frequency"],
         new_entry["free_only"],
     )
-    previous_data = db.get_scraped_data(update_type)
-    latest_chapter, timestamp = scrape_website(new_entry["url"], previous_data, force_update=True)
-    db.update_scraped_entry(new_entry["url"], latest_chapter, timestamp)
+    link = {
+        "url": new_entry["url"],
+        "free_only": new_entry["free_only"],
+        "name": new_entry["name"],
+        "update_frequency": new_entry["update_frequency"],
+    }
+    data_entry, failure = process_link(link, {})
+    if data_entry:
+        db.merge_scraped({link["url"]: data_entry})
+    if failure:
+        db.record_failures(failure)
     return jsonify({"status": "success"})
 
 def edit_link(category=None):
@@ -284,6 +306,6 @@ if __name__ == "__main__":
 
     # Option B: Kick off background tasks at startup (server starts immediately)
     for category in FILE_PATHS.keys():
-        socketio.start_background_task(force_update_job, category)
+        socketio.start_background_task(run_update_job, category)
 
-    app.run(host="0.0.0.0", debug=False, port=555)
+    app.run(host="0.0.0.0", debug=True, port=555)

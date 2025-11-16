@@ -1,8 +1,7 @@
+import datetime
 import sqlite3
 from pathlib import Path
 from typing import Dict, List, Optional
-
-from datetime import datetime
 
 DEFAULT_UPDATE_FREQUENCY = 1  # days
 DEFAULT_FREE_ONLY = False
@@ -33,14 +32,40 @@ class ChapterDatabase:
                     category TEXT NOT NULL,
                     update_frequency INTEGER NOT NULL DEFAULT 1,
                     free_only INTEGER NOT NULL DEFAULT 0,
-                    last_saved TEXT NOT NULL DEFAULT 'N/A'
+                    last_saved TEXT NOT NULL DEFAULT 'N/A',
+                    last_attempt TEXT,
+                    last_error TEXT
                 )
                 """
             )
+            self._ensure_links_columns(conn)
+            self._ensure_scraped_entries_table(conn)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_links_category ON links(category)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_scraped_entries_link ON scraped_entries(link_id)"
+            )
+
+    def _ensure_scraped_entries_table(self, conn):
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS scraped_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                link_id INTEGER,
+                last_found TEXT,
+                timestamp TEXT,
+                retrieved_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY(link_id) REFERENCES links(id) ON DELETE CASCADE
+            )
+            """
+        )
+        columns = [row["name"] for row in conn.execute("PRAGMA table_info(scraped_entries)").fetchall()]
+        if "id" not in columns:
+            conn.execute("ALTER TABLE scraped_entries RENAME TO scraped_entries_old")
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS scraped_entries (
-                    link_id INTEGER UNIQUE,
+                CREATE TABLE scraped_entries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    link_id INTEGER,
                     last_found TEXT,
                     timestamp TEXT,
                     retrieved_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -48,7 +73,26 @@ class ChapterDatabase:
                 )
                 """
             )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_links_category ON links(category)")
+            conn.execute(
+                """
+                INSERT INTO scraped_entries (link_id, last_found, timestamp, retrieved_at)
+                SELECT link_id, last_found, timestamp, COALESCE(retrieved_at, datetime('now'))
+                FROM scraped_entries_old
+                """
+            )
+            conn.execute("DROP TABLE scraped_entries_old")
+
+    def _ensure_links_columns(self, conn):
+        columns = [row["name"] for row in conn.execute("PRAGMA table_info(links)").fetchall()]
+        needed = {"last_attempt", "last_error"}
+        missing = needed - set(columns)
+        if not missing:
+            return
+        for col in missing:
+            if col == "last_attempt":
+                conn.execute("ALTER TABLE links ADD COLUMN last_attempt TEXT")
+            elif col == "last_error":
+                conn.execute("ALTER TABLE links ADD COLUMN last_error TEXT")
 
     @staticmethod
     def _normalize_frequency(value):
@@ -136,14 +180,28 @@ class ChapterDatabase:
         with self._connect() as conn:
             rows = conn.execute(
                 """
-                SELECT l.url,
-                       l.name,
-                       l.free_only,
-                       l.last_saved,
-                       se.last_found,
-                       se.timestamp
+                SELECT
+                    l.url,
+                    l.name,
+                    l.free_only,
+                    l.last_saved,
+                    l.last_attempt,
+                    l.last_error,
+                    (
+                        SELECT last_found
+                        FROM scraped_entries se2
+                        WHERE se2.link_id = l.id
+                        ORDER BY se2.id DESC
+                        LIMIT 1
+                    ) AS last_found,
+                    (
+                        SELECT timestamp
+                        FROM scraped_entries se2
+                        WHERE se2.link_id = l.id
+                        ORDER BY se2.id DESC
+                        LIMIT 1
+                    ) AS timestamp
                 FROM links l
-                LEFT JOIN scraped_entries se ON l.id = se.link_id
                 WHERE l.category = ?
                 """,
                 (category,),
@@ -154,27 +212,55 @@ class ChapterDatabase:
                 "name": row["name"],
                 "free_only": bool(row["free_only"]),
                 "last_saved": row["last_saved"],
+                "last_attempt": row["last_attempt"],
+                "last_error": row["last_error"],
                 "last_found": row["last_found"] or "No data",
-                "timestamp": row["timestamp"] or datetime.now().strftime("%Y/%m/%d"),
+                "timestamp": row["timestamp"] or datetime.datetime.now().strftime("%Y/%m/%d"),
             }
         return result
 
-    def update_scraped_entry(self, url: str, last_found: str, timestamp: str):
+    def update_scraped_entry(
+        self,
+        url: str,
+        last_found: str,
+        timestamp: str,
+        retrieved_at: Optional[str] = None,
+    ):
         link_id = self._get_link_id(url)
         if not link_id:
             return
+        retrieved_at = retrieved_at or datetime.datetime.now().isoformat()
         with self._connect() as conn:
+            existing = conn.execute(
+                "SELECT last_found, timestamp FROM scraped_entries WHERE link_id = ? ORDER BY id DESC LIMIT 1",
+                (link_id,),
+            ).fetchone()
+            if existing and existing["last_found"] == last_found and existing[
+                "timestamp"
+            ] == timestamp:
+                return
             conn.execute(
                 """
-                INSERT INTO scraped_entries (link_id, last_found, timestamp)
-                VALUES (?, ?, ?)
-                ON CONFLICT(link_id) DO UPDATE SET
-                    last_found = excluded.last_found,
-                    timestamp = excluded.timestamp,
-                    retrieved_at = excluded.retrieved_at
+                INSERT INTO scraped_entries (link_id, last_found, timestamp, retrieved_at)
+                VALUES (?, ?, ?, ?)
                 """,
-                (link_id, last_found, timestamp),
+                (link_id, last_found, timestamp, retrieved_at),
             )
+
+    def record_failures(self, failures: Dict[str, Dict]):
+        if not failures:
+            return
+        with self._connect() as conn:
+            for url, info in failures.items():
+                now = datetime.datetime.now().isoformat()
+                conn.execute(
+                    """
+                    UPDATE links
+                    SET last_attempt = ?, last_error = ?
+                    WHERE url = ?
+                    """,
+                    (now, info.get("error"), url),
+                )
 
     def mark_saved(self, url: str):
         with self._connect() as conn:
@@ -185,6 +271,8 @@ class ChapterDatabase:
                     SELECT IFNULL(last_found, 'N/A')
                     FROM scraped_entries
                     WHERE link_id = links.id
+                    ORDER BY id DESC
+                    LIMIT 1
                 )
                 WHERE url = ?
                 """,
