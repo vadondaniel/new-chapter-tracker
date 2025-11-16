@@ -106,6 +106,18 @@ def load_scraper_plugins():
 SCRAPERS = load_scraper_plugins()
 
 
+def _find_scraper_for_url(url: str):
+    for domain, plugin in SCRAPERS.items():
+        if domain in url:
+            return plugin
+    return None
+
+
+def supports_free_toggle(url: str):
+    plugin = _find_scraper_for_url(url)
+    return bool(plugin and plugin.get("supports_free_toggle"))
+
+
 def entry_due_for_scrape(link, entry, force_update=False):
     if force_update or not entry or entry.get("last_found") == "No data" or not entry.get("timestamp"):
         return True

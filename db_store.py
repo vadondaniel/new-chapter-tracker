@@ -183,6 +183,7 @@ class ChapterDatabase:
                 SELECT
                     l.url,
                     l.name,
+                    l.update_frequency,
                     l.free_only,
                     l.last_saved,
                     l.last_attempt,
@@ -210,6 +211,7 @@ class ChapterDatabase:
         for row in rows:
             result[row["url"]] = {
                 "name": row["name"],
+                "update_frequency": row["update_frequency"],
                 "free_only": bool(row["free_only"]),
                 "last_saved": row["last_saved"],
                 "last_attempt": row["last_attempt"],

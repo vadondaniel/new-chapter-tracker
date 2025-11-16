@@ -42,6 +42,16 @@ last_full_update = {key: None for key in FILE_PATHS}
 import scraping
 scraping.socketio = socketio
 
+
+def annotate_support_flags(entries):
+    return {
+        url: {
+            **data,
+            "supports_free_toggle": scraping.supports_free_toggle(url),
+        }
+        for url, data in entries.items()
+    }
+
 # --------------------- Helpers ---------------------
 def resolve_category(category=None):
     if category:
@@ -127,7 +137,7 @@ def schedule_updates():
 # --------------------- View Logic ---------------------
 def index(category=None):
     update_type = resolve_category(category)
-    previous_data = db.get_scraped_data(update_type)
+    previous_data = annotate_support_flags(db.get_scraped_data(update_type))
 
     differences = {url: data for url, data in previous_data.items() if data["last_found"] != data["last_saved"]}
     same_data = {url: data for url, data in previous_data.items() if data["last_found"] == data["last_saved"]}

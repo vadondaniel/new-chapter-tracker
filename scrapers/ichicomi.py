@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 DOMAINS = ["ichicomi.com"]
-SUPPORTS_FREE_TOGGLE = False
+SUPPORTS_FREE_TOGGLE = True
 
 FREE_ONLY_DEFAULT = True
 

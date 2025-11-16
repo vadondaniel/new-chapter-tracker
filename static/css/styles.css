@@ -131,8 +131,8 @@ td {
   vertical-align: middle;
 }
 
-/* Row hover effect */
-tr:hover {
+ /* Row hover effect */
+ tr:hover {
   background-color: #f8fafc;
 }
 
@@ -368,6 +368,62 @@ button.danger:hover {
   border-radius: 6px;
   font-size: 0.95rem;
   box-sizing: border-box;
+}
+
+.modal-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  margin-top: 8px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.modal-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.modal-checkbox .custom-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5f0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+  background: #fff;
+}
+
+.modal-checkbox .custom-checkbox::after {
+  content: "";
+  width: 6px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.modal-checkbox input[type="checkbox"]:checked + .custom-checkbox {
+  background: #2ecc71;
+  border-color: #2ecc71;
+}
+
+.modal-checkbox input[type="checkbox"]:checked + .custom-checkbox::after {
+  opacity: 1;
+}
+
+.modal-checkbox.hidden {
+  display: none;
 }
 
 /* modal actions */

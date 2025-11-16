@@ -347,11 +347,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// Example handler for edit (you can adjust to your logic)
-function editChapter(url) {
-  alert("Edit clicked for " + url);
-}
-
 // Floating add modal logic
 document.addEventListener("DOMContentLoaded", function () {
   const floatingBtn = document.getElementById("floatingAddBtn");
@@ -359,45 +354,80 @@ document.addEventListener("DOMContentLoaded", function () {
   const backdrop = document.getElementById("addModalBackdrop");
   const modalName = document.getElementById("modalName");
   const modalUrl = document.getElementById("modalUrl");
+  const modalFrequency = document.getElementById("modalFrequency");
   const modalAddBtn = document.getElementById("modalAddBtn");
   const modalCancelBtn = document.getElementById("modalCancelBtn");
   const modalTitle = document.getElementById("addModalTitle");
+  const modalFreeOnly = document.getElementById("modalFreeOnly");
+  const modalFreeOnlyWrapper = modalFreeOnly
+    ? modalFreeOnly.closest(".modal-checkbox")
+    : null;
 
-  function openAddModal() {
-      // set title based on mode
-      if (modalAddBtn && modalAddBtn.dataset.mode === "edit") {
-        modalTitle.textContent = "Edit Link";
-      } else {
-        modalTitle.textContent = "Add New Link";
-      }
-      addModal.classList.remove("hidden");
-      setTimeout(() => modalName.focus(), 50);
+  function resetModalFields() {
+    if (modalName) modalName.value = "";
+    if (modalUrl) modalUrl.value = "";
+    if (modalFrequency) modalFrequency.value = "1";
+    if (modalFreeOnly) modalFreeOnly.checked = false;
+    if (modalFreeOnlyWrapper) modalFreeOnlyWrapper.classList.remove("hidden");
   }
+
+  function setFreeOnlyVisibility(show) {
+    if (!modalFreeOnlyWrapper) return;
+    modalFreeOnlyWrapper.classList.toggle("hidden", !show);
+  }
+
+  function openAddModal(showFreeOnly = true) {
+    const isEditMode = modalAddBtn && modalAddBtn.dataset.mode === "edit";
+    if (modalTitle)
+      modalTitle.textContent = isEditMode ? "Edit Link" : "Add New Link";
+    if (!isEditMode && modalFrequency)
+      modalFrequency.value = modalFrequency.value || "1";
+    if (!isEditMode && modalFreeOnly) modalFreeOnly.checked = false;
+    setFreeOnlyVisibility(showFreeOnly);
+    if (addModal) addModal.classList.remove("hidden");
+    setTimeout(() => modalName && modalName.focus(), 50);
+  }
+
   function closeAddModal() {
-      addModal.classList.add("hidden");
-      modalName.value = "";
-      modalUrl.value = "";
-      // reset title to default
-      if (modalTitle) modalTitle.textContent = "Add New Link";
+    if (addModal) addModal.classList.add("hidden");
+    resetModalFields();
+    if (modalAddBtn) {
+      delete modalAddBtn.dataset.mode;
+      delete modalAddBtn.dataset.origUrl;
+      modalAddBtn.innerHTML = '<i class="fas fa-plus"></i> Add';
+    }
+    if (modalTitle) modalTitle.textContent = "Add New Link";
   }
 
-  if (floatingBtn) floatingBtn.addEventListener("click", openAddModal);
+  if (floatingBtn) floatingBtn.addEventListener("click", () => openAddModal(true));
   if (backdrop) backdrop.addEventListener("click", closeAddModal);
   if (modalCancelBtn) modalCancelBtn.addEventListener("click", closeAddModal);
 
   // submit from modal (add or edit)
   async function submitModalAdd() {
-    const name = modalName.value.trim();
-    const url = modalUrl.value.trim();
+    const name = modalName ? modalName.value.trim() : "";
+    const url = modalUrl ? modalUrl.value.trim() : "";
     if (!name || !url) return alert("Please enter both name and URL.");
-    const isEdit = modalAddBtn.dataset.mode === "edit";
+    const freqValue = modalFrequency ? modalFrequency.value.trim() : "";
+    const payload = {
+      name,
+      url,
+      free_only: modalFreeOnly ? modalFreeOnly.checked : false,
+    };
+    if (freqValue) {
+      payload.update_frequency = freqValue;
+    }
+    const isEdit = modalAddBtn && modalAddBtn.dataset.mode === "edit";
     const path = actionPath(isEdit ? "edit" : "add");
     const body = isEdit
-      ? JSON.stringify({ original_url: modalAddBtn.dataset.origUrl, name, url })
-      : JSON.stringify({ name, url });
+      ? JSON.stringify({
+          original_url: modalAddBtn.dataset.origUrl,
+          ...payload,
+        })
+      : JSON.stringify(payload);
 
     try {
-      modalAddBtn.disabled = true;
+      if (modalAddBtn) modalAddBtn.disabled = true;
       const res = await fetch(path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -414,7 +444,7 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Error submitting modal:", err);
       alert("Error submitting.");
     } finally {
-      modalAddBtn.disabled = false;
+      if (modalAddBtn) modalAddBtn.disabled = false;
     }
   }
 
@@ -422,41 +452,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // open modal in edit mode for a given url
   window.editChapter = function (url) {
-    // find menu-container row with this url
     const container = Array.from(
       document.querySelectorAll(".menu-container")
     ).find((c) => c.dataset.url === url);
     let name = "";
     if (container && container.dataset.name) name = container.dataset.name;
-    // fallback: try to find name from the row
     if (!name) {
       const row = container ? container.closest("tr") : null;
       const titleLink = row ? row.querySelector(".domain-tooltip a") : null;
       if (titleLink) name = titleLink.textContent.trim();
     }
 
-    modalName.value = name || "";
-    modalUrl.value = url || "";
-    modalAddBtn.dataset.mode = "edit";
-    modalAddBtn.dataset.origUrl = url || "";
-    modalAddBtn.innerHTML = '<i class="fas fa-save"></i> Save';
-    modalTitle.textContent = "Edit Link";
-    openAddModal();
+    if (modalName) modalName.value = name || "";
+    if (modalUrl) modalUrl.value = url || "";
+    if (modalFrequency)
+      modalFrequency.value = container?.dataset.updateFrequency || "1";
+    if (modalFreeOnly)
+      modalFreeOnly.checked = container?.dataset.freeOnly === "true";
+    if (modalAddBtn) {
+      modalAddBtn.dataset.mode = "edit";
+      modalAddBtn.dataset.origUrl = url || "";
+      modalAddBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+    }
+    const supportsFree = container?.dataset.supportsFree === "true";
+    if (!supportsFree && modalFreeOnly) modalFreeOnly.checked = false;
+    openAddModal(supportsFree);
   };
 
-  function closeAddModal() {
-    addModal.classList.add("hidden");
-    modalName.value = "";
-    modalUrl.value = "";
-    // reset button to add mode
-    delete modalAddBtn.dataset.mode;
-    delete modalAddBtn.dataset.origUrl;
-    modalAddBtn.innerHTML = '<i class="fas fa-plus"></i> Add';
-    if (modalTitle) modalTitle.textContent = "Add New Link";
-  }
+  resetModalFields();
 
-  // Enter key to submit inside modal
-  [modalName, modalUrl].forEach((el) => {
+  [modalName, modalUrl, modalFrequency].forEach((el) => {
     if (!el) return;
     el.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
@@ -471,7 +496,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // close modal on Escape from document
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !addModal.classList.contains("hidden"))
+    if (e.key === "Escape" && addModal && !addModal.classList.contains("hidden"))
       closeAddModal();
   });
 });

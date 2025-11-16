@@ -4,7 +4,7 @@ import requests
 from dateutil import parser
 
 DOMAINS = ["kemono.cr"]
-SUPPORTS_FREE_TOGGLE = True
+SUPPORTS_FREE_TOGGLE = False
 
 def scrape(url, free_only=False):
     timestamp = datetime.datetime.now().strftime("%Y/%m/%d")

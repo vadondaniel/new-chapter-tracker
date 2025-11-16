@@ -119,6 +119,9 @@
                   class="menu-container"
                   data-url="{{ url }}"
                   data-name="{{ data.name }}"
+                  data-update-frequency="{{ data.update_frequency }}"
+                  data-free-only="{{ 'true' if data.free_only else 'false' }}"
+                  data-supports-free="{{ 'true' if data.supports_free_toggle else 'false' }}"
                 >
                   <button
                     class="menu-toggle"
@@ -200,6 +203,9 @@
                   class="menu-container"
                   data-url="{{ url }}"
                   data-name="{{ data.name }}"
+                  data-update-frequency="{{ data.update_frequency }}"
+                  data-free-only="{{ 'true' if data.free_only else 'false' }}"
+                  data-supports-free="{{ 'true' if data.supports_free_toggle else 'false' }}"
                 >
                   <button
                     class="menu-toggle"
@@ -262,7 +268,19 @@
         <div class="modal-body">
           <input id="modalName" type="text" placeholder="Name" />
           <input id="modalUrl" type="text" placeholder="URL" />
+          <input
+            id="modalFrequency"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="Update frequency (days)"
+          />
         </div>
+        <label class="modal-checkbox">
+          <input type="checkbox" id="modalFreeOnly" />
+          <span class="custom-checkbox" aria-hidden="true"></span>
+          <span>Restrict to free-only chapters</span>
+        </label>
         <div class="modal-actions">
           <button id="modalAddBtn"><i class="fas fa-plus"></i> Add</button>
           <button id="modalCancelBtn" class="danger">Cancel</button>
