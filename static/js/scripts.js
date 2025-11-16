@@ -29,14 +29,25 @@ function hideSpinner() {
 }
 
 // ===== Progress updates via WebSocket =====
+const getCurrentCategory = () =>
+  document.body?.dataset.category || "main";
+
 socket.on("update_progress", function (data) {
+  const targetCategory = data?.category || "main";
+  if (targetCategory !== getCurrentCategory()) {
+    return;
+  }
   showSpinner(`Updating... ${data.current}/${data.total}`);
   const fill = document.getElementById("progressFill");
   const percent = (data.current / data.total) * 100;
   fill.style.width = percent + "%";
 });
 
-socket.on("update_complete", function () {
+socket.on("update_complete", function (data) {
+  const targetCategory = data?.category || "main";
+  if (targetCategory !== getCurrentCategory()) {
+    return;
+  }
   hideSpinner();
   location.reload();
 });

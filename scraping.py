@@ -189,7 +189,7 @@ def normalize_scrape_result(result):
     return chapter, timestamp, success, error
 
 
-def scrape_all_links(links, previous_data, force_update=False):
+def scrape_all_links(links, previous_data, force_update=False, category=None):
     global update_in_progress
     update_in_progress = True
     new_data = {}
@@ -202,14 +202,17 @@ def scrape_all_links(links, previous_data, force_update=False):
         data, failure = process_link(link, entry, force_update)
         processed += 1
         if socketio:
-            socketio.emit("update_progress", {"current": processed, "total": total_links})
+            socketio.emit(
+                "update_progress",
+                {"current": processed, "total": total_links, "category": category or "main"},
+            )
         if data:
             new_data[link["url"]] = data
         if failure:
             failures.update(failure)
 
     if socketio:
-        socketio.emit("update_complete")
+        socketio.emit("update_complete", {"category": category or "main"})
     update_in_progress = False
     logging.info("Scraping all links completed.")
     return new_data, failures

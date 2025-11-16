@@ -115,7 +115,9 @@ def run_update_job(category="main", force_update=False):
         logging.info(f"Starting scheduled update for {category} (force={force_update})...")
         links = db.get_links(category)
         current_data = db.get_scraped_data(category)
-        new_data, failures = scrape_all_links(links, current_data, force_update=force_update)
+        new_data, failures = scrape_all_links(
+            links, current_data, force_update=force_update, category=category
+        )
         db.merge_scraped(new_data)
         db.record_failures(failures)
         last_full_update[category] = datetime.now().isoformat()
