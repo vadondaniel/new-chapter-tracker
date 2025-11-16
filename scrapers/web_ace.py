@@ -1,4 +1,9 @@
 import datetime
+import logging
+import re
+from email.utils import parsedate_to_datetime
+from typing import Optional
+from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -7,22 +12,50 @@ from scraper_utils import needs_update
 
 DOMAINS = ["web-ace.jp"]
 
+RSS_TEMPLATE = "https://web-ace.jp/youngaceup/feed/rss/{series_id}/"
+
+def _extract_series_id(url: str) -> Optional[str]:
+    path = urlparse(url).path
+    match = re.search(r"/contents/(\d+)", path)
+    return match.group(1) if match else None
+
 def scrape(url, previous_data, force_update=False):
     if not needs_update(url, previous_data, 10, force_update):
         return previous_data[url]["last_found"], previous_data[url]["timestamp"]
 
-    response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-    soup = BeautifulSoup(response.text, "html.parser")
-    latest_chapter_div = soup.find("div", class_="media-body")
-    if latest_chapter_div:
-        updated_date = latest_chapter_div.find("span", class_="updated-date").get_text(strip=True)
-        chapter_text = latest_chapter_div.find("p", class_="text-bold").get_text(strip=True)
-        updated_date_parts = updated_date.split(".")
-        updated_date_padded = ".".join(part.zfill(2) for part in updated_date_parts)
-        timestamp = (
-            datetime.datetime.strptime(updated_date_padded, "%Y.%m.%d").strftime("%Y/%m/%d")
-            if updated_date
-            else datetime.datetime.now().strftime("%Y/%m/%d")
-        )
-        return chapter_text, timestamp
-    return "No new chapter found", datetime.datetime.now().strftime("%Y/%m/%d")
+    latest_chapter = "No new chapter found"
+    timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
+
+    series_id = _extract_series_id(url)
+    if not series_id:
+        logging.warning("Unable to parse series ID from %s", url)
+        return latest_chapter, timestamp
+
+    rss_url = RSS_TEMPLATE.format(series_id=series_id)
+
+    try:
+        response = requests.get(rss_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, "xml")
+        latest_item = soup.find("item")
+        if not latest_item:
+            return latest_chapter, timestamp
+
+        title_tag = latest_item.find("title")
+        if title_tag and title_tag.text:
+            raw_title = title_tag.text.strip()
+            bracket_match = re.match(r"^\[([^\]]+)\]", raw_title)
+            latest_chapter = bracket_match.group(1) if bracket_match else raw_title
+
+        pub_date_tag = latest_item.find("pubDate")
+        if pub_date_tag and pub_date_tag.text:
+            try:
+                parsed_date = parsedate_to_datetime(pub_date_tag.text.strip())
+            except (TypeError, ValueError) as err:
+                logging.warning("Unable to parse pubDate for %s: %s", url, err)
+            else:
+                timestamp = parsed_date.strftime("%Y/%m/%d")
+    except requests.RequestException as exc:
+        logging.warning("Failed to fetch RSS feed %s: %s", rss_url, exc)
+
+    return latest_chapter, timestamp
