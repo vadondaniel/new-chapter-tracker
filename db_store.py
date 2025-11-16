@@ -264,6 +264,18 @@ class ChapterDatabase:
                     (now, info.get("error"), url),
                 )
 
+    def record_success(self, url: str, when: Optional[str] = None):
+        when = when or datetime.datetime.now().isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                UPDATE links
+                SET last_attempt = ?, last_error = NULL
+                WHERE url = ?
+                """,
+                (when, url),
+            )
+
     def mark_saved(self, url: str):
         with self._connect() as conn:
             conn.execute(
@@ -319,3 +331,4 @@ class ChapterDatabase:
             if "free_only" in entry:
                 self.update_link_metadata(url, free_only=entry["free_only"])
             self.update_scraped_entry(url, entry["last_found"], entry["timestamp"])
+            self.record_success(url, entry.get("retrieved_at"))
