@@ -1,6 +1,6 @@
 import datetime
 import logging
-import re
+from email.utils import parsedate_to_datetime
 from urllib.parse import urljoin
 
 import requests
@@ -10,11 +10,17 @@ from scraper_utils import needs_update
 
 DOMAINS = ["ichicomi.com"]
 
+FREE_ONLY_DEFAULT = True
+
 def scrape(url, previous_data, force_update=False):
     if not needs_update(url, previous_data, 10, force_update):
         return previous_data[url]["last_found"], previous_data[url]["timestamp"]
 
-    latest_chapter, timestamp = "No new chapter found", datetime.datetime.now().strftime("%Y/%m/%d")
+    latest_chapter = "No new chapter found"
+    timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
+
+    entry = previous_data.get(url, {})
+    free_only = entry.get("free_only", FREE_ONLY_DEFAULT)
 
     HEADERS = {
         "User-Agent": (
@@ -28,33 +34,52 @@ def scrape(url, previous_data, force_update=False):
     try:
         page = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(page.text, "html.parser")
-        title_tag = soup.select_one("h1.series-header-title")
-        if not title_tag:
-            logging.warning(f"Series title not found for {url}")
+        rss_link = soup.find("link", rel="alternate", type="application/rss+xml")
+        if not rss_link or not rss_link.get("href"):
+            logging.warning("RSS feed link missing for %s, cannot check for new chapters", url)
             return latest_chapter, timestamp
 
-        series_title = title_tag.text.strip()
-        search_url = f"https://ichicomi.com/search?q={series_title}"
-        search_page = requests.get(search_url, headers=HEADERS)
-        search_soup = BeautifulSoup(search_page.text, "html.parser")
-        latest_chapter_link = search_soup.select_one("a.SearchResultItem_sub_link__BB9Z8")
-        if not latest_chapter_link:
-            logging.warning(f"No latest chapter link found for {series_title}")
+        rss_url = urljoin("https://ichicomi.com", rss_link["href"])
+        rss_page = requests.get(rss_url, headers=HEADERS, timeout=10)
+        rss_soup = BeautifulSoup(rss_page.content, "xml")
+        items = rss_soup.find_all("item")
+
+        selected_item = None
+        if free_only:
+            for item in items:
+                if item.find("giga:freeTermStartDate"):
+                    selected_item = item
+                    break
+        else:
+            selected_item = items[0] if items else None
+
+        if not selected_item:
+            logging.info("No free chapter item found yet for %s", url)
             return latest_chapter, timestamp
 
-        latest_url = urljoin("https://ichicomi.com", latest_chapter_link["href"])
-        chapter_page = requests.get(latest_url, headers=HEADERS)
-        chapter_soup = BeautifulSoup(chapter_page.text, "html.parser")
-        chapter_title_tag = chapter_soup.select_one(".episode-header-title")
-        if chapter_title_tag:
-            latest_chapter = chapter_title_tag.text.strip()
+        item_title = selected_item.find("title")
+        if item_title and item_title.text:
+            latest_chapter = item_title.text.strip()
 
-        date_tag = chapter_soup.select_one(".episode-header-date")
-        if date_tag:
-            raw_date = date_tag.text.strip()
-            match = re.match(r"(\d{4})?(\d{2})?(\d{2})?", raw_date)
-            if match:
-                timestamp = f"{match.group(1)}/{match.group(2)}/{match.group(3)}"
+        date_text = None
+        free_term_tag = selected_item.find("giga:freeTermStartDate")
+        if free_term_tag and free_term_tag.text:
+            date_text = free_term_tag.text.strip()
+        else:
+            pub_date_tag = selected_item.find("pubDate")
+            date_text = pub_date_tag.text.strip() if pub_date_tag and pub_date_tag.text else None
+
+        if date_text:
+            try:
+                parsed_date = parsedate_to_datetime(date_text)
+            except (TypeError, ValueError) as date_err:
+                logging.warning(
+                    "Could not parse date from RSS for %s: %s", url, date_err
+                )
+            else:
+                timestamp = parsed_date.strftime("%Y/%m/%d")
+    except requests.RequestException as rss_error:
+        logging.warning("Failed to fetch RSS feed for %s: %s", url, rss_error)
     except Exception as e:
         logging.error(f"Error scraping {url}: {e}")
 
