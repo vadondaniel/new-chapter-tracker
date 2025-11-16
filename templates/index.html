@@ -64,12 +64,12 @@
     />
     <meta name="theme-color" content="#ffffff" />
   </head>
-  <body>
+  <body data-category="{{ current_category }}">
     <div class="container">
       <h1>New Chapter Tracker</h1>
 
-      <div class="table-header">
-        <h2 class="toggle" onclick="toggleSection(this)">
+        <div class="table-header">
+          <h2 class="toggle" data-section="new" onclick="toggleSection(this)">
           New Chapters <span class="badge">{{ differences|length }}</span>
         </h2>
         <div class="full-update-tooltip">
@@ -166,7 +166,7 @@
       </div>
 
       <div class="table-header">
-        <h2 class="toggle collapsed" onclick="toggleSection(this)">
+        <h2 class="toggle collapsed" data-section="same" onclick="toggleSection(this)">
           No New Chapters <span class="badge">{{ same_data|length }}</span>
         </h2>
       </div>

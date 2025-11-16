@@ -151,7 +151,8 @@ def index(category=None):
         differences=differences,
         same_data=same_data,
         update_in_progress=update_in_progress,
-        last_full_update=last_full_update[update_type]
+        last_full_update=last_full_update[update_type],
+        current_category=update_type,
     )
 
 def update(category=None):

@@ -153,10 +153,49 @@ window.onload = function () {
 };
 
 // ===== Collapse Tables =====
+const SECTION_STATE_PREFIX = "chapter-tracker-sections";
+
+function getSectionStorageKey() {
+  const category = document.body?.dataset.category || "main";
+  return `${SECTION_STATE_PREFIX}-${category}`;
+}
+
+function readSectionStates() {
+  if (typeof window === "undefined" || !window.localStorage) return {};
+  try {
+    const stored = window.localStorage.getItem(getSectionStorageKey());
+    return stored ? JSON.parse(stored) : {};
+  } catch (err) {
+    console.warn("Unable to read section state:", err);
+    return {};
+  }
+}
+
+function persistSectionState(sectionId, collapsed) {
+  if (
+    !sectionId ||
+    typeof window === "undefined" ||
+    !window.localStorage
+  ) {
+    return;
+  }
+  try {
+    const key = getSectionStorageKey();
+    const state = readSectionStates();
+    state[sectionId] = collapsed;
+    window.localStorage.setItem(key, JSON.stringify(state));
+  } catch (err) {
+    console.warn("Unable to persist section state:", err);
+  }
+}
+
 function toggleSection(header) {
   header.classList.toggle("collapsed");
   const content = header.closest(".table-header").nextElementSibling;
-  content.classList.toggle("collapsed");
+  if (!content) return;
+  const collapsed = content.classList.toggle("collapsed");
+  const sectionId = header.dataset.section;
+  persistSectionState(sectionId, collapsed);
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -171,6 +210,18 @@ document.addEventListener("DOMContentLoaded", function () {
       link.parentElement.querySelector(".tooltiptext").textContent =
         "Invalid URL";
     }
+  });
+
+  const savedSectionStates = readSectionStates();
+  document.querySelectorAll(".table-header h2.toggle").forEach((header) => {
+    const sectionId = header.dataset.section;
+    if (!sectionId) return;
+    const content = header.closest(".table-header").nextElementSibling;
+    if (!content) return;
+    if (!(sectionId in savedSectionStates)) return;
+    const shouldCollapse = !!savedSectionStates[sectionId];
+    header.classList.toggle("collapsed", shouldCollapse);
+    content.classList.toggle("collapsed", shouldCollapse);
   });
 
   // --- NEW: floating tooltips for .table-tooltip to avoid clipping by table wrapper ---
