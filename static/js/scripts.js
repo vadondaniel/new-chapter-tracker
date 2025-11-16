@@ -428,7 +428,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function resetModalFields() {
     if (modalName) modalName.value = "";
     if (modalUrl) modalUrl.value = "";
-    if (modalFrequency) modalFrequency.value = "1";
+    if (modalFrequency) modalFrequency.value = "";
     if (modalFreeOnly) modalFreeOnly.checked = false;
     if (modalFreeOnlyWrapper) modalFreeOnlyWrapper.classList.remove("hidden");
   }
@@ -442,8 +442,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const isEditMode = modalAddBtn && modalAddBtn.dataset.mode === "edit";
     if (modalTitle)
       modalTitle.textContent = isEditMode ? "Edit Link" : "Add New Link";
-    if (!isEditMode && modalFrequency)
-      modalFrequency.value = modalFrequency.value || "1";
     if (!isEditMode && modalFreeOnly) modalFreeOnly.checked = false;
     setFreeOnlyVisibility(showFreeOnly);
     if (addModal) addModal.classList.remove("hidden");
@@ -528,7 +526,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (modalName) modalName.value = name || "";
     if (modalUrl) modalUrl.value = url || "";
     if (modalFrequency)
-      modalFrequency.value = container?.dataset.updateFrequency || "1";
+      modalFrequency.value = container?.dataset.updateFrequency || "";
     if (modalFreeOnly)
       modalFreeOnly.checked = container?.dataset.freeOnly === "true";
     if (modalAddBtn) {
