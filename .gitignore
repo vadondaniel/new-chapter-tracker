@@ -1,7 +1,0 @@
-*.json
-*.txt
-debug.md
-/__pycache__/
-*.pyc
-.gitignore
-scraping_*
