@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from scraper_utils import needs_update
 
 DOMAINS = ["web-ace.jp"]
+SUPPORTS_FREE_TOGGLE = False
 
 RSS_TEMPLATE = "https://web-ace.jp/youngaceup/feed/rss/{series_id}/"
 

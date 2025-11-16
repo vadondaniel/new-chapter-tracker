@@ -2,6 +2,9 @@ import json
 from pathlib import Path
 from typing import Callable, Generic, TypeVar
 
+DEFAULT_UPDATE_FREQUENCY = 1  # days
+DEFAULT_FREE_ONLY = True
+
 T = TypeVar("T")
 
 
@@ -48,7 +51,9 @@ class CategoryStorage:
 
     # Links helpers
     def read_links(self):
-        return self.links_store.load()
+        links = self.links_store.load()
+        self._ensure_link_defaults(links)
+        return links
 
     def save_links(self):
         self.links_store.save()
@@ -59,6 +64,20 @@ class CategoryStorage:
 
     def save_data(self):
         self.data_store.save()
+
+    def _ensure_link_defaults(self, links):
+        for link in links:
+            freq = link.get("update_frequency", DEFAULT_UPDATE_FREQUENCY)
+            link["update_frequency"] = self._normalize_frequency(freq)
+            link.setdefault("free_only", DEFAULT_FREE_ONLY)
+
+    @staticmethod
+    def _normalize_frequency(value):
+        try:
+            freq = float(value)
+            return max(1, int(freq) if freq.is_integer() else int(freq) + 1)
+        except (TypeError, ValueError):
+            return DEFAULT_UPDATE_FREQUENCY
 
     def upsert_entry(self, url: str, name: str, last_found: str, timestamp: str, last_saved=None):
         data = self.read_data()

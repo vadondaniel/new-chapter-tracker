@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from scraper_utils import needs_update, convert_to_rss_url
 
 DOMAINS = ["nyaa.si"]
+SUPPORTS_FREE_TOGGLE = False
 
 def scrape(url, previous_data, force_update=False):
     if not needs_update(url, previous_data, 2, force_update):

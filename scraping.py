@@ -129,8 +129,13 @@ def load_scraper_plugins():
             logging.warning("Plugin %s missing scrape entry point or domains", name)
             continue
 
+        supports_free_toggle = getattr(module, "SUPPORTS_FREE_TOGGLE", False)
+
         for domain in domains:
-            registry[domain] = scrape_func
+            registry[domain] = {
+                "scraper": scrape_func,
+                "supports_free_toggle": bool(supports_free_toggle),
+            }
 
     if not registry:
         logging.warning("No scraper plugins were loaded.")
@@ -139,9 +144,9 @@ def load_scraper_plugins():
 SCRAPERS = load_scraper_plugins()
 
 def scrape_website(url, previous_data, force_update=False):
-    for domain, scraper in SCRAPERS.items():
+    for domain, plugin in SCRAPERS.items():
         if domain in url:
-            return scraper(url, previous_data, force_update)
+            return plugin["scraper"](url, previous_data, force_update)
     return "Unsupported website", datetime.datetime.now().strftime("%Y/%m/%d")
 
 # --------------------- Main Scraper ---------------------

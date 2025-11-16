@@ -7,7 +7,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from scraping import scrape_website, scrape_all_links
 from config import CATEGORIES
-from data_store import CategoryStorage
+from data_store import (
+    CategoryStorage,
+    DEFAULT_FREE_ONLY,
+    DEFAULT_UPDATE_FREQUENCY,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -53,6 +57,52 @@ def get_category_storage(category=None):
     resolved = resolve_category(category)
     paths = FILE_PATHS[resolved]
     return CategoryStorage(paths["links"], paths["data"]), resolved
+
+
+def parse_free_only(value, default):
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    value_str = str(value).strip().lower()
+    return value_str in {"1", "true", "yes", "y"}
+
+
+def parse_update_frequency(value, default):
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return max(1, int(value))
+    text = str(value).strip().lower()
+    if not text:
+        return default
+
+    multiplier = 1.0
+    if text.endswith("d"):
+        text = text[:-1]
+    elif text.endswith("h"):
+        multiplier = 1 / 24
+        text = text[:-1]
+    elif text.endswith("m"):
+        multiplier = 1 / (24 * 60)
+        text = text[:-1]
+
+    try:
+        num = float(text)
+    except ValueError:
+        return default
+
+    freq = num * multiplier
+    return max(1, int(freq) if freq.is_integer() else int(freq) + 1)
+
+
+def get_link_metadata(payload, existing=None):
+    existing_freq = existing.get("update_frequency") if existing else DEFAULT_UPDATE_FREQUENCY
+    freq = parse_update_frequency(payload.get("update_frequency"), existing_freq)
+
+    existing_free_flag = existing.get("free_only") if existing else DEFAULT_FREE_ONLY
+    free_only = parse_free_only(payload.get("free_only"), existing_free_flag)
+    return freq, free_only
 
 # --------------------- Background Jobs ---------------------
 def force_update_job(category="main"):
@@ -128,7 +178,13 @@ def add_link(category=None):
     data = request.json
     store, _ = get_category_storage(category)
     links = store.read_links()
-    new_entry = {"name": data["name"], "url": data["url"]}
+    freq, free_only = get_link_metadata(data)
+    new_entry = {
+        "name": data["name"],
+        "url": data["url"],
+        "update_frequency": freq,
+        "free_only": free_only,
+    }
     if not any(link["url"] == new_entry["url"] for link in links):
         links.append(new_entry)
         store.save_links()
@@ -157,8 +213,11 @@ def edit_link(category=None):
     updated = False
     for link in links:
         if normalize(link.get("url", "")) == normalize(orig_url or ""):
+            freq, free_only = get_link_metadata(data, link)
             link["url"] = new_url
             link["name"] = new_name
+            link["update_frequency"] = freq
+            link["free_only"] = free_only
             updated = True
             break
     if updated:

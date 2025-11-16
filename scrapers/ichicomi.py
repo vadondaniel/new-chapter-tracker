@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from scraper_utils import needs_update
 
 DOMAINS = ["ichicomi.com"]
+SUPPORTS_FREE_TOGGLE = False
 
 FREE_ONLY_DEFAULT = True
 

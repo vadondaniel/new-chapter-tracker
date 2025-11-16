@@ -6,6 +6,7 @@ from dateutil import parser
 from scraper_utils import needs_update
 
 DOMAINS = ["kemono.cr"]
+SUPPORTS_FREE_TOGGLE = True
 
 def scrape(url, previous_data, force_update=False):
     if not needs_update(url, previous_data, 5, force_update):
