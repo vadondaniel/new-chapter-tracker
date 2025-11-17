@@ -33,6 +33,7 @@ class ChapterDatabase:
                     update_frequency INTEGER NOT NULL DEFAULT 1,
                     free_only INTEGER NOT NULL DEFAULT 0,
                     last_saved TEXT NOT NULL DEFAULT 'N/A',
+                    added_at TEXT NOT NULL DEFAULT 'N/A',
                     last_attempt TEXT,
                     last_error TEXT
                 )
@@ -84,7 +85,7 @@ class ChapterDatabase:
 
     def _ensure_links_columns(self, conn):
         columns = [row["name"] for row in conn.execute("PRAGMA table_info(links)").fetchall()]
-        needed = {"last_attempt", "last_error"}
+        needed = {"added_at", "last_attempt", "last_error"}
         missing = needed - set(columns)
         if not missing:
             return
@@ -93,6 +94,8 @@ class ChapterDatabase:
                 conn.execute("ALTER TABLE links ADD COLUMN last_attempt TEXT")
             elif col == "last_error":
                 conn.execute("ALTER TABLE links ADD COLUMN last_error TEXT")
+            elif col == "added_at":
+                conn.execute("ALTER TABLE links ADD COLUMN added_at TEXT NOT NULL DEFAULT 'N/A'")
 
     @staticmethod
     def _normalize_frequency(value):
@@ -138,18 +141,19 @@ class ChapterDatabase:
     ):
         freq = self._normalize_frequency(update_frequency)
         flag = self._to_flag(free_only)
+        added_at = datetime.datetime.now().isoformat()
         with self._connect() as conn:
             conn.execute(
                 """
-                INSERT INTO links (url, name, category, update_frequency, free_only)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO links (url, name, category, update_frequency, free_only, added_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(url) DO UPDATE SET
                     name=excluded.name,
                     category=excluded.category,
                     update_frequency=excluded.update_frequency,
                     free_only=excluded.free_only
                 """,
-                (url, name, category, freq, flag),
+                (url, name, category, freq, flag, added_at),
             )
 
     def update_link(
@@ -179,7 +183,7 @@ class ChapterDatabase:
     def get_scraped_data(self, category: str) -> Dict[str, Dict]:
         with self._connect() as conn:
             rows = conn.execute(
-                """
+            """
                 SELECT
                     l.url,
                     l.name,
@@ -188,6 +192,7 @@ class ChapterDatabase:
                     l.last_saved,
                     l.last_attempt,
                     l.last_error,
+                    l.added_at,
                     (
                         SELECT last_found
                         FROM scraped_entries se2
@@ -216,6 +221,7 @@ class ChapterDatabase:
                 "last_saved": row["last_saved"],
                 "last_attempt": row["last_attempt"],
                 "last_error": row["last_error"],
+                "added_at": row["added_at"],
                 "last_found": row["last_found"] or "No data",
                 "timestamp": row["timestamp"] or datetime.datetime.now().strftime("%Y/%m/%d"),
             }
