@@ -34,6 +34,7 @@ class ChapterDatabase:
                     free_only INTEGER NOT NULL DEFAULT 0,
                     last_saved TEXT NOT NULL DEFAULT 'N/A',
                     added_at TEXT NOT NULL DEFAULT 'N/A',
+                    favorite INTEGER NOT NULL DEFAULT 0,
                     last_attempt TEXT,
                     last_error TEXT
                 )
@@ -85,7 +86,7 @@ class ChapterDatabase:
 
     def _ensure_links_columns(self, conn):
         columns = [row["name"] for row in conn.execute("PRAGMA table_info(links)").fetchall()]
-        needed = {"added_at", "last_attempt", "last_error"}
+        needed = {"added_at", "favorite", "last_attempt", "last_error"}
         missing = needed - set(columns)
         if not missing:
             return
@@ -96,6 +97,8 @@ class ChapterDatabase:
                 conn.execute("ALTER TABLE links ADD COLUMN last_error TEXT")
             elif col == "added_at":
                 conn.execute("ALTER TABLE links ADD COLUMN added_at TEXT NOT NULL DEFAULT 'N/A'")
+            elif col == "favorite":
+                conn.execute("ALTER TABLE links ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0")
 
     @staticmethod
     def _normalize_frequency(value):
@@ -118,7 +121,7 @@ class ChapterDatabase:
     def get_links(self, category: str) -> List[Dict]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT url, name, update_frequency, free_only FROM links WHERE category = ? ORDER BY id",
+                "SELECT url, name, update_frequency, free_only, favorite FROM links WHERE category = ? ORDER BY id",
                 (category,),
             ).fetchall()
         return [
@@ -127,6 +130,7 @@ class ChapterDatabase:
                 "name": row["name"],
                 "update_frequency": row["update_frequency"],
                 "free_only": bool(row["free_only"]),
+                "favorite": bool(row["favorite"]),
             }
             for row in rows
         ]
@@ -138,22 +142,24 @@ class ChapterDatabase:
         category: str,
         update_frequency: int,
         free_only: bool,
+        favorite: bool = False,
     ):
         freq = self._normalize_frequency(update_frequency)
         flag = self._to_flag(free_only)
         added_at = datetime.datetime.now().isoformat()
+        favorite_flag = self._to_flag(favorite)
         with self._connect() as conn:
             conn.execute(
                 """
-                INSERT INTO links (url, name, category, update_frequency, free_only, added_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO links (url, name, category, update_frequency, free_only, added_at, favorite)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(url) DO UPDATE SET
                     name=excluded.name,
                     category=excluded.category,
                     update_frequency=excluded.update_frequency,
                     free_only=excluded.free_only
                 """,
-                (url, name, category, freq, flag, added_at),
+                (url, name, category, freq, flag, added_at, favorite_flag),
             )
 
     def update_link(
@@ -193,6 +199,7 @@ class ChapterDatabase:
                     l.last_attempt,
                     l.last_error,
                     l.added_at,
+                    l.favorite,
                     (
                         SELECT last_found
                         FROM scraped_entries se2
@@ -222,6 +229,7 @@ class ChapterDatabase:
                 "last_attempt": row["last_attempt"],
                 "last_error": row["last_error"],
                 "added_at": row["added_at"],
+                "favorite": bool(row["favorite"]),
                 "last_found": row["last_found"] or "No data",
                 "timestamp": row["timestamp"] or datetime.datetime.now().strftime("%Y/%m/%d"),
             }
@@ -311,6 +319,7 @@ class ChapterDatabase:
         url: str,
         name: Optional[str] = None,
         free_only: Optional[bool] = None,
+        favorite: Optional[bool] = None,
     ):
         updates = []
         params = []
@@ -320,6 +329,9 @@ class ChapterDatabase:
         if free_only is not None:
             updates.append("free_only = ?")
             params.append(self._to_flag(free_only))
+        if favorite is not None:
+            updates.append("favorite = ?")
+            params.append(self._to_flag(favorite))
         if not updates:
             return
         params.append(url)
