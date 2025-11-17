@@ -227,6 +227,16 @@ def recheck(category=None):
         db.record_failures(failure)
     return jsonify({"status": "success"})
 
+def history(category=None):
+    data = request.json
+    url = data.get("url")
+    if not url:
+        return jsonify({"status": "missing"}), 400
+    result = db.get_link_history(url)
+    if not result:
+        return jsonify({"status": "missing"}), 404
+    return jsonify(result)
+
 def favorite_link(category=None):
     data = request.json
     target_url = data.get("url")
@@ -314,6 +324,7 @@ app.add_url_rule("/add", endpoint="main_add", view_func=lambda: add_link("main")
 app.add_url_rule("/edit", endpoint="main_edit", view_func=lambda: edit_link("main"), methods=["POST"])
 app.add_url_rule("/remove", endpoint="main_remove", view_func=lambda: remove_link("main"), methods=["POST"])
 app.add_url_rule("/favorite", endpoint="main_favorite", view_func=lambda: favorite_link("main"), methods=["POST"])
+app.add_url_rule("/history", endpoint="main_history", view_func=lambda: history("main"), methods=["POST"])
 
 # dynamically add routes for each category
 for category in CATEGORIES:
@@ -362,6 +373,12 @@ for category in CATEGORIES:
         f"/{category}/favorite",
         endpoint=f"{category}_favorite",
         view_func=lambda cat=category: favorite_link(cat),
+        methods=["POST"]
+    )
+    app.add_url_rule(
+        f"/{category}/history",
+        endpoint=f"{category}_history",
+        view_func=lambda cat=category: history(cat),
         methods=["POST"]
     )
     

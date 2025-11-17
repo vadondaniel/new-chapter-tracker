@@ -288,6 +288,23 @@
       </div>
     </div>
 
+    <div id="historyModalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+      <div class="history-modal">
+        <div class="history-modal__header">
+          <h3 id="historyModalTitle">Link History</h3>
+          <p class="history-modal__meta">
+            <span>Added: <strong id="historyAddedAt">Unknown</strong></span>
+            <span>Last attempt: <strong id="historyLastAttempt">Unknown</strong></span>
+          </p>
+          <div class="history-pill-group">
+            <span class="pill" id="historyFrequencyPill"></span>
+            <span class="pill" id="historyFreeOnlyPill"></span>
+          </div>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+
     <script>
       var retainValue = function (value) {
         if (value > 9) {

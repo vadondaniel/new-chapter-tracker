@@ -160,8 +160,111 @@ function toggleFavorite(url, container) {
     });
 }
 
-function viewHistory(url) {
-  alert("History view is not implemented yet.");
+function formatDateTime(value) {
+  if (!value) return "Unknown";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function hideHistoryModal() {
+  const backdrop = document.getElementById("historyModalBackdrop");
+  if (!backdrop) return;
+  backdrop.classList.add("hidden");
+}
+
+function openHistoryModal(data, supportsFree) {
+  const backdrop = document.getElementById("historyModalBackdrop");
+  if (!backdrop) return;
+  const title = document.getElementById("historyModalTitle");
+  const addedAt = document.getElementById("historyAddedAt");
+  const lastAttempt = document.getElementById("historyLastAttempt");
+  const freqPill = document.getElementById("historyFrequencyPill");
+  const freePill = document.getElementById("historyFreeOnlyPill");
+  const list = document.getElementById("historyList");
+
+  if (title) title.textContent = data.name || data.url || "Link history";
+  if (addedAt) addedAt.textContent = formatDateTime(data.added_at);
+  if (lastAttempt) lastAttempt.textContent = formatDateTime(data.last_attempt);
+  if (freqPill)
+    freqPill.textContent = data.update_frequency
+      ? `Every ${data.update_frequency} day${data.update_frequency === 1 ? "" : "s"}`
+      : "Frequency unknown";
+  if (freePill) {
+    if (supportsFree) {
+      freePill.style.display = "inline-flex";
+      freePill.textContent = data.free_only ? "Free only" : "Include paid";
+    } else {
+      freePill.style.display = "none";
+    }
+  }
+  if (list) {
+    list.textContent = "";
+    if (!Array.isArray(data.history) || data.history.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "history-empty";
+      empty.textContent = "No historical chapters recorded yet.";
+      list.appendChild(empty);
+    } else {
+      data.history.forEach((entry) => {
+        const entryEl = document.createElement("div");
+        entryEl.className = "history-entry";
+        const isCurrent =
+          data.last_saved &&
+          data.last_saved !== "N/A" &&
+          entry.last_found === data.last_saved;
+        if (isCurrent) entryEl.classList.add("current");
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "history-entry__title";
+        titleEl.textContent = entry.last_found || "No chapter data";
+
+        const metaEl = document.createElement("div");
+        metaEl.className = "history-entry__meta";
+        const timestampEl = document.createElement("span");
+        timestampEl.textContent = entry.timestamp || "Date unknown";
+        const retrievedEl = document.createElement("span");
+        retrievedEl.textContent = `Fetched: ${formatDateTime(entry.retrieved_at)}`;
+        metaEl.appendChild(timestampEl);
+        metaEl.appendChild(retrievedEl);
+
+        entryEl.appendChild(titleEl);
+        entryEl.appendChild(metaEl);
+        list.appendChild(entryEl);
+      });
+    }
+  }
+
+  backdrop.classList.remove("hidden");
+}
+
+function viewHistory(url, supportsFree) {
+  const path = actionPath("history");
+  showSpinner("Loading history...");
+  fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  })
+    .then(async (response) => {
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.status || "Unable to load history");
+      }
+      return payload;
+    })
+    .then((data) => openHistoryModal(data, supportsFree))
+    .catch((error) => {
+      console.error("Error loading history:", error);
+      alert("Unable to load history.");
+    })
+    .finally(() => hideSpinner());
 }
 
 function forceUpdate() {
@@ -490,10 +593,11 @@ document.addEventListener("DOMContentLoaded", function () {
           toggleFavorite(url, container);
           clone.remove();
         });
+      const supportsFree = container.dataset.supportsFree === "true";
       if (historyBtn)
         historyBtn.addEventListener("click", (ev) => {
           ev.stopPropagation();
-          viewHistory(url);
+          viewHistory(url, supportsFree);
           clone.remove();
         });
       if (deleteBtn)
@@ -665,5 +769,14 @@ document.addEventListener("DOMContentLoaded", function () {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && addModal && !addModal.classList.contains("hidden"))
       closeAddModal();
+  });
+
+  const historyBackdrop = document.getElementById("historyModalBackdrop");
+  if (historyBackdrop)
+    historyBackdrop.addEventListener("click", (evt) => {
+      if (evt.target === historyBackdrop) hideHistoryModal();
+    });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") hideHistoryModal();
   });
 });

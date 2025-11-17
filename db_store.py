@@ -1,7 +1,7 @@
 import datetime
 import sqlite3
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 DEFAULT_UPDATE_FREQUENCY = 1  # days
 DEFAULT_FREE_ONLY = False
@@ -234,6 +234,45 @@ class ChapterDatabase:
                 "timestamp": row["timestamp"] or datetime.datetime.now().strftime("%Y/%m/%d"),
             }
         return result
+
+    def get_link_history(self, url: str) -> Optional[Dict[str, Any]]:
+        with self._connect() as conn:
+            link = conn.execute(
+                """
+                SELECT id, url, name, last_saved, last_attempt, added_at, update_frequency, free_only
+                FROM links
+                WHERE url = ?
+                """,
+                (url,),
+            ).fetchone()
+            if not link:
+                return None
+            entries = conn.execute(
+                """
+                SELECT last_found, timestamp, retrieved_at
+                FROM scraped_entries
+                WHERE link_id = ?
+                ORDER BY id DESC
+                """,
+                (link["id"],),
+            ).fetchall()
+        return {
+            "url": link["url"],
+            "name": link["name"],
+            "last_saved": link["last_saved"],
+            "last_attempt": link["last_attempt"],
+            "added_at": link["added_at"],
+            "update_frequency": link["update_frequency"],
+            "free_only": bool(link["free_only"]),
+            "history": [
+                {
+                    "last_found": row["last_found"],
+                    "timestamp": row["timestamp"],
+                    "retrieved_at": row["retrieved_at"],
+                }
+                for row in entries
+            ],
+        }
 
     def update_scraped_entry(
         self,
