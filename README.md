@@ -39,4 +39,5 @@ The first launch seeds `data/chapters.db` with default categories (`main`, `mang
 ## Next Steps (Optional)
 
 - Drop new scraper modules into `scrapers/` if you need more sources—the frontend automatically discovers new domains.
+- Use `scrapers/example_template.py` as a reference implementation that documents the inputs/outputs, scraping advice, and Selenium fallback guidance.
 - Visit `/api/categories` (via AJAX/CLI) for a JSON view of active categories, their next scheduled run, and last-checked timestamp.
