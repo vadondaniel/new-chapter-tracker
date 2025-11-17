@@ -732,6 +732,28 @@ button.danger:hover {
   position: relative;
 }
 
+.modal-checkbox .tooltiptext {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  transform: none;
+  white-space: normal !important;
+  max-width: 320px !important;
+  padding: 6px 10px;
+  box-shadow: var(--tooltip-shadow);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 1100;
+  display: block;
+  text-align: left !important;
+  overflow: visible;
+}
+.modal-checkbox.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
 .modal-checkbox input[type="checkbox"] {
   position: absolute;
   opacity: 0;
@@ -813,7 +835,7 @@ button.danger:hover {
 .modal-field .modal-info .tooltiptext {
   z-index: 1100;
   white-space: normal;
-  max-width: 260px;
+  max-width: 320px;
   text-align: left;
   width: max-content;
   padding: 6px 10px;
@@ -825,7 +847,7 @@ button.danger:hover {
 
 .info-tooltiptext {
   white-space: normal;
-  max-width: 260px;
+  max-width: 320px;
   text-align: left;
   z-index: 1300;
 }
