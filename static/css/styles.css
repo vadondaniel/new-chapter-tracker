@@ -497,6 +497,33 @@ button.danger:hover {
   gap: 4px;
 }
 
+.timestamp-tooltiptext {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 6px);
+  margin-top: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.92);
+  color: #fff;
+  font-size: 0.75rem;
+  text-align: center;
+  white-space: normal;
+  max-width: 240px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 905;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.timestamp-text:hover .timestamp-tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
 .error-timestamp {
   color: #dc2626;
   font-weight: 600;

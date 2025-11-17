@@ -110,9 +110,11 @@
               >
                 <span
                   class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}"
-                  {% if data.timestamp_display != data.timestamp %}title="{{ data.timestamp }}"{% endif %}
                 >
                   {{ data.timestamp_display }}
+                  {% if data.timestamp_display != data.timestamp %}
+                  <span class="tooltiptext timestamp-tooltiptext">{{ data.timestamp }}</span>
+                  {% endif %}
                   {% if data.last_error %}
                   <span class="tooltiptext error-tooltiptext">{{ data.last_error }}</span>
                   {% endif %}
@@ -208,9 +210,11 @@
               >
                 <span
                   class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}"
-                  {% if data.timestamp_display != data.timestamp %}title="{{ data.timestamp }}"{% endif %}
                 >
                   {{ data.timestamp_display }}
+                  {% if data.timestamp_display != data.timestamp %}
+                  <span class="timestamp-tooltiptext">{{ data.timestamp }}</span>
+                  {% endif %}
                   {% if data.last_error %}
                   <span class="tooltiptext error-tooltiptext">{{ data.last_error }}</span>
                   {% endif %}
