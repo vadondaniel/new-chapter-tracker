@@ -631,17 +631,6 @@ button.danger:hover {
   align-items: center;
   min-width: 42px;
 }
-.history-entry__actions .table-tooltip {
-  display: inline-flex;
-  width: 36px;
-  height: 36px;
-  position: relative;
-}
-.history-entry__actions .tooltiptext {
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
-}
 .history-entry__action {
   border-radius: 8px;
   padding: 0;
@@ -761,28 +750,6 @@ button.danger:hover {
   position: relative;
 }
 
-.modal-checkbox .tooltiptext {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  transform: none;
-  white-space: normal !important;
-  max-width: 320px !important;
-  padding: 6px 10px;
-  box-shadow: var(--tooltip-shadow);
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  z-index: 1100;
-  display: block;
-  text-align: left !important;
-  overflow: visible;
-}
-.modal-checkbox.tooltip:hover .tooltiptext {
-  visibility: visible;
-  opacity: 1;
-}
-
 .modal-checkbox input[type="checkbox"] {
   position: absolute;
   opacity: 0;
@@ -859,65 +826,6 @@ button.danger:hover {
 
 .modal-field .modal-info i {
   font-size: 0.9rem;
-}
-
-.modal-field .modal-info .tooltiptext {
-  z-index: 1100;
-  white-space: normal;
-  max-width: 320px;
-  text-align: left;
-  width: max-content;
-  padding: 6px 10px;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 6px;
-}
-
-.info-tooltiptext {
-  white-space: normal;
-  max-width: 320px;
-  text-align: left;
-  z-index: 1300;
-}
-
-.info-tooltiptext.floating {
-  white-space: normal;
-}
-
-.timestamp-text {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.error-timestamp {
-  color: var(--error-color);
-  font-weight: 600;
-}
-
-.error-tooltiptext {
-  display: none;
-}
-
-.floating-error-tooltip {
-  position: absolute;
-  display: block;
-  visibility: hidden;
-  opacity: 0;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: var(--tooltip-bg);
-  color: var(--tooltip-color);
-  max-width: 320px;
-  white-space: normal;
-  text-align: left;
-  box-shadow: var(--shadow-floating-error);
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-  z-index: 1300;
-  word-break: break-word;
 }
 
 /* modal actions */
@@ -1100,6 +1008,29 @@ a:visited {
   pointer-events: none;
 }
 
+/* Tooltip variants used by modal form helpers */
+.modal-checkbox .tooltiptext {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  transform: none;
+  white-space: normal !important;
+  max-width: 320px !important;
+  padding: 6px 10px;
+  box-shadow: var(--tooltip-shadow);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 1100;
+  display: block;
+  text-align: left !important;
+  overflow: visible;
+}
+.modal-checkbox.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
 /* Show tooltip on hover */
 .tooltip:hover .tooltiptext,
 .table-tooltip:hover .tooltiptext,
@@ -1131,6 +1062,19 @@ a:visited {
   transform: translateY(-50%);
   margin-right: 5px;
   white-space: nowrap;
+}
+
+/* History entry tooltips sit above the timeline actions */
+.history-entry__actions .table-tooltip {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  position: relative;
+}
+.history-entry__actions .tooltiptext {
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Timestamp tooltips share the same theme but stay anchored below the text */
@@ -1190,6 +1134,66 @@ a:visited {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none;
+}
+
+/* Tooltip variants requiring custom sizing/placement */
+.modal-field .modal-info .tooltiptext {
+  z-index: 1100;
+  white-space: normal;
+  max-width: 320px;
+  text-align: left;
+  width: max-content;
+  padding: 6px 10px;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+}
+
+.info-tooltiptext {
+  white-space: normal;
+  max-width: 320px;
+  text-align: left;
+  z-index: 1300;
+}
+
+.info-tooltiptext.floating {
+  white-space: normal;
+}
+
+.timestamp-text {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-timestamp {
+  color: var(--error-color);
+  font-weight: 600;
+}
+
+.error-tooltiptext {
+  display: none;
+}
+
+.floating-error-tooltip {
+  position: absolute;
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-color);
+  max-width: 320px;
+  white-space: normal;
+  text-align: left;
+  box-shadow: var(--shadow-floating-error);
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 1300;
+  word-break: break-word;
 }
 
 /* ========= Status Messages ========= */
