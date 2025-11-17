@@ -6,6 +6,12 @@ from typing import Any, Dict, List, Optional
 DEFAULT_UPDATE_FREQUENCY = 1  # days
 DEFAULT_FREE_ONLY = False
 
+_DEFAULT_CATEGORIES = [
+    ("main", 1),
+    ("manga", 5),
+    ("novel", 5),
+]
+
 
 class ChapterDatabase:
     """SQLite-backed store for links and scraped entries."""
@@ -42,6 +48,7 @@ class ChapterDatabase:
             )
             self._ensure_links_columns(conn)
             self._ensure_scraped_entries_table(conn)
+            self._ensure_categories_table(conn)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_links_category ON links(category)")
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_scraped_entries_link ON scraped_entries(link_id)"
@@ -83,6 +90,29 @@ class ChapterDatabase:
                 """
             )
             conn.execute("DROP TABLE scraped_entries_old")
+
+    def _ensure_categories_table(self, conn):
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS categories (
+                name TEXT PRIMARY KEY,
+                update_interval_hours INTEGER NOT NULL DEFAULT 1,
+                last_checked TEXT
+            )
+            """
+        )
+        self._seed_categories(conn)
+
+    def _seed_categories(self, conn):
+        existing = {
+            row["name"] for row in conn.execute("SELECT name FROM categories").fetchall()
+        }
+        for name, hours in _DEFAULT_CATEGORIES:
+            if name not in existing:
+                conn.execute(
+                    "INSERT INTO categories (name, update_interval_hours) VALUES (?, ?)",
+                    (name, hours),
+                )
 
     def _ensure_links_columns(self, conn):
         columns = [row["name"] for row in conn.execute("PRAGMA table_info(links)").fetchall()]
@@ -389,3 +419,45 @@ class ChapterDatabase:
                 self.update_link_metadata(url, free_only=entry["free_only"])
             self.update_scraped_entry(url, entry["last_found"], entry["timestamp"])
             self.record_success(url, entry.get("retrieved_at"))
+
+    def get_categories(self) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT name, update_interval_hours, last_checked
+                FROM categories
+                ORDER BY CASE name WHEN 'main' THEN 0 ELSE 1 END, name
+                """
+            ).fetchall()
+        return [
+            {
+                "name": row["name"],
+                "update_interval_hours": row["update_interval_hours"],
+                "last_checked": row["last_checked"],
+            }
+            for row in rows
+        ]
+
+    def get_category(self, name: str) -> Optional[Dict[str, Any]]:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT name, update_interval_hours, last_checked FROM categories WHERE name = ?",
+                (name,),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "name": row["name"],
+            "update_interval_hours": row["update_interval_hours"],
+            "last_checked": row["last_checked"],
+        }
+
+    def get_category_names(self) -> List[str]:
+        return [cat["name"] for cat in self.get_categories()]
+
+    def set_category_last_checked(self, name: str, timestamp: str):
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE categories SET last_checked = ? WHERE name = ?",
+                (timestamp, name),
+            )

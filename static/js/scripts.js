@@ -5,7 +5,14 @@ let PREFIXES = [];
 async function loadPrefixes() {
   const response = await fetch("/api/categories");
   const categories = await response.json();
-  PREFIXES = categories.map((c) => `/${c}`);
+  const names = Array.isArray(categories)
+    ? categories
+        .map((c) => (typeof c === "string" ? c : c.name))
+        .filter(Boolean)
+    : [];
+  PREFIXES = names
+    .filter((name) => name !== "main")
+    .map((name) => `/${name}`);
 }
 
 loadPrefixes();

@@ -7,36 +7,23 @@ from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from scraping import process_link, scrape_all_links
-from config import CATEGORIES
 from db_store import ChapterDatabase, DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY
 
 logging.basicConfig(level=logging.INFO)
 
-# --------------------- File Paths ---------------------
+# --------------------- Data Directory ---------------------
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
-
-FILE_PATHS = {
-    "main": {
-        "links": os.path.join(DATA_DIR, "links.json"),
-        "data": os.path.join(DATA_DIR, "scraped_data.json"),
-    }
-}
-
-# auto-generate paths from categories
-for category in CATEGORIES:
-    FILE_PATHS[category] = {
-        "links": os.path.join(DATA_DIR, f"{category}_links.json"),
-        "data": os.path.join(DATA_DIR, f"{category}_scraped_data.json"),
-    }
 
 DB_PATH = Path(DATA_DIR) / "chapters.db"
 db = ChapterDatabase(DB_PATH)
 
+CATEGORY_NAMES = db.get_category_names()
+CATEGORY_PREFIXES = [name for name in CATEGORY_NAMES if name != "main"]
+
 app = Flask(__name__)
 socketio = SocketIO(app)
 update_in_progress = False
-last_full_update = {key: None for key in FILE_PATHS}
 
 # Pass the socketio object to scraping.py
 import scraping
@@ -80,10 +67,10 @@ def annotate_timestamp_display(entries):
 
 # --------------------- Helpers ---------------------
 def resolve_category(category=None):
-    if category:
+    if category in CATEGORY_NAMES:
         return category
     path = request.path or ""
-    for candidate in CATEGORIES:
+    for candidate in CATEGORY_PREFIXES:
         if path.startswith(f"/{candidate}"):
             return candidate
     return "main"
@@ -136,29 +123,32 @@ def get_link_metadata(payload, existing=None):
 
 # --------------------- Background Jobs ---------------------
 def run_update_job(category="main", force_update=False):
-    global last_full_update
     with app.app_context():
         logging.info(f"Starting scheduled update for {category} (force={force_update})...")
-        links = db.get_links(category)
-        current_data = db.get_scraped_data(category)
-        new_data, failures = scrape_all_links(
-            links, current_data, force_update=force_update, category=category
-        )
-        db.merge_scraped(new_data)
-        db.record_failures(failures)
-        last_full_update[category] = datetime.now().isoformat()
-        logging.info(f"Scheduled update for {category} completed.")
+        try:
+            links = db.get_links(category)
+            current_data = db.get_scraped_data(category)
+            new_data, failures = scrape_all_links(
+                links, current_data, force_update=force_update, category=category
+            )
+            db.merge_scraped(new_data)
+            db.record_failures(failures)
+            logging.info(f"Scheduled update for {category} completed.")
+        finally:
+            db.set_category_last_checked(category, datetime.now().isoformat())
 
 def schedule_updates():
     scheduler = BackgroundScheduler(job_defaults={'max_instances': 1})
-    scheduler.add_job(
-        lambda: run_update_job("main"),
-        'interval', hours=1
-    )
-    for category in CATEGORIES:
+    for category in db.get_categories():
+        interval = category.get("update_interval_hours") or 1
+        try:
+            interval = max(1, int(interval))
+        except (TypeError, ValueError):
+            interval = 1
         scheduler.add_job(
-            lambda c=category: run_update_job(c),
-            'interval', hours=5
+            lambda c=category["name"]: run_update_job(c),
+            'interval',
+            hours=interval,
         )
     scheduler.start()
     
@@ -186,13 +176,15 @@ def index(category=None):
     differences = sort_entries_by_favorite_then_time(differences)
     same_data = sort_entries_by_favorite_then_time(same_data)
 
-    logging.info(f"Last full update ({update_type}): {last_full_update[update_type]}")
+    category_info = db.get_category(update_type)
+    last_checked = category_info["last_checked"] if category_info else None
+    logging.info(f"Last full update ({update_type}): {last_checked}")
     return render_template(
         "index.html",
         differences=differences,
         same_data=same_data,
         update_in_progress=update_in_progress,
-        last_full_update=last_full_update[update_type],
+        last_full_update=last_checked,
         current_category=update_type,
     )
 
@@ -327,7 +319,7 @@ app.add_url_rule("/favorite", endpoint="main_favorite", view_func=lambda: favori
 app.add_url_rule("/history", endpoint="main_history", view_func=lambda: history("main"), methods=["POST"])
 
 # dynamically add routes for each category
-for category in CATEGORIES:
+for category in CATEGORY_PREFIXES:
     app.add_url_rule(
         f"/{category}",
         endpoint=f"{category}_index",   # unique endpoint name
@@ -384,17 +376,13 @@ for category in CATEGORIES:
     
 @app.route("/api/categories")
 def get_categories():
-    return jsonify(CATEGORIES)
+    return jsonify(db.get_categories())
 
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
     schedule_updates()
-    # Option A: Run synchronously at startup (wait before serving requests)
-    # for category, paths in FILE_PATHS.items():
-    #     force_update_job(paths["links"], paths["data"], category)
-
     # Option B: Kick off background tasks at startup (server starts immediately)
-    for category in FILE_PATHS.keys():
+    for category in CATEGORY_NAMES:
         socketio.start_background_task(run_update_job, category)
 
     app.run(host="0.0.0.0", debug=True, port=555)
