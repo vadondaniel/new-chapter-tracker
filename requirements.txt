@@ -1,0 +1,5 @@
+Flask
+Flask-SocketIO
+APScheduler
+selenium
+webdriver-manager
