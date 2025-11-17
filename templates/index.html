@@ -8,23 +8,43 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/styles.css') }}"
     />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
     <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      rel="preload"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      />
+    </noscript>
+    <link
+      rel="preload"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      />
+    </noscript>
     <script>
       var update_in_progress = {{ update_in_progress|tojson }};
     </script>
-    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <!-- Favicons -->
     <link
       rel="icon"
