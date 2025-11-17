@@ -205,7 +205,11 @@ h2.toggle::after {
   margin-left: 6px;
 }
 
-h2.toggle.collapsed::after {
+.table-header h2.toggle.no-transition::after {
+  transition: none;
+}
+
+.table-header:has(+ .collapsible-content.collapsed) h2.toggle::after {
   transform: rotate(-90deg);
 }
 
@@ -220,6 +224,10 @@ h2.toggle.collapsed::after {
 .collapsible-content.collapsed {
   max-height: 0;
   opacity: 0;
+}
+
+.collapsible-content.no-transition {
+  transition: none;
 }
 
 /* ========= Table Section ========= */

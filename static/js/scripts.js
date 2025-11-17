@@ -606,11 +606,25 @@ function persistSectionState(sectionId, collapsed) {
   }
 }
 
+function applyCollapseState(header, content, collapsed, disableAnimation = false) {
+  if (disableAnimation) {
+    content.classList.add("no-transition");
+    if (header) header.classList.add("no-transition");
+  }
+  if (collapsed) content.classList.add("collapsed");
+  else content.classList.remove("collapsed");
+  if (disableAnimation)
+    requestAnimationFrame(() => {
+      content.classList.remove("no-transition");
+      if (header) header.classList.remove("no-transition");
+    });
+}
+
 function toggleSection(header) {
-  header.classList.toggle("collapsed");
   const content = header.closest(".table-header").nextElementSibling;
   if (!content) return;
-  const collapsed = content.classList.toggle("collapsed");
+  const collapsed = !content.classList.contains("collapsed");
+  applyCollapseState(header, content, collapsed);
   const sectionId = header.dataset.section;
   persistSectionState(sectionId, collapsed);
 }
@@ -628,8 +642,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!content) return;
     if (!(sectionId in savedSectionStates)) return;
     const shouldCollapse = !!savedSectionStates[sectionId];
-    header.classList.toggle("collapsed", shouldCollapse);
-    content.classList.toggle("collapsed", shouldCollapse);
+    applyCollapseState(header, content, shouldCollapse, true);
   });
 
   initRowEnhancements(document);
