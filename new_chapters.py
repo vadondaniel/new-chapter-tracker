@@ -138,17 +138,41 @@ def run_update_job(category="main", force_update=False):
             db.set_category_last_checked(category, datetime.now().isoformat())
 
 def schedule_updates():
-    scheduler = BackgroundScheduler(job_defaults={'max_instances': 1})
+    scheduler = BackgroundScheduler(job_defaults={"max_instances": 1})
+    now = datetime.now()
     for category in db.get_categories():
+        name = category["name"]
         interval = category.get("update_interval_hours") or 1
         try:
-            interval = max(1, int(interval))
+            interval_hours = max(1, int(interval))
         except (TypeError, ValueError):
-            interval = 1
+            interval_hours = 1
+
+        last_checked_str = category.get("last_checked")
+        last_checked = None
+        if last_checked_str:
+            try:
+                last_checked = datetime.fromisoformat(last_checked_str)
+            except ValueError:
+                last_checked = None
+
+        next_run_time = now
+        if last_checked:
+            candidate = last_checked + timedelta(hours=interval_hours)
+            if candidate > now:
+                next_run_time = candidate
+
         scheduler.add_job(
-            lambda c=category["name"]: run_update_job(c),
-            'interval',
-            hours=interval,
+            lambda c=name: run_update_job(c),
+            "interval",
+            hours=interval_hours,
+            next_run_time=next_run_time,
+        )
+        logging.info(
+            "Scheduled '%s' to run next at %s (interval=%dh)",
+            name,
+            next_run_time.isoformat(),
+            interval_hours,
         )
     scheduler.start()
     
@@ -381,8 +405,4 @@ def get_categories():
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
     schedule_updates()
-    # Option B: Kick off background tasks at startup (server starts immediately)
-    for category in CATEGORY_NAMES:
-        socketio.start_background_task(run_update_job, category)
-
     app.run(host="0.0.0.0", debug=True, port=555)
