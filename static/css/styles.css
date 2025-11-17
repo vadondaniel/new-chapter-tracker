@@ -776,12 +776,6 @@ button.danger:hover {
   display: none;
 }
 
-.modal-checkbox .modal-info {
-  color: var(--muted-color);
-  margin-left: auto;
-  justify-content: flex-end;
-}
-
 .modal-field {
   display: flex;
   align-items: center;
@@ -873,10 +867,6 @@ button.danger:hover {
   transition: opacity 0.15s ease;
   z-index: 1300;
   word-break: break-word;
-}
-
-.modal-checkbox .modal-info i {
-  font-size: 0.9rem;
 }
 
 /* modal actions */
