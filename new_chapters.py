@@ -445,4 +445,4 @@ def get_categories():
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
     schedule_updates()
-    app.run(host="0.0.0.0", debug=True, port=555)
+    app.run(host="0.0.0.0", debug=False, port=555)
