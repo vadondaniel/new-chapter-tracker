@@ -515,6 +515,7 @@ button.danger:hover {
   width: min(540px, 100%);
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   box-shadow: var(--shadow-modal);
 }
@@ -553,15 +554,30 @@ button.danger:hover {
 .history-entry {
   border: 1px solid var(--border-soft);
   border-radius: 12px;
-  padding: 12px;
+  padding: 12px 16px;
   background: var(--surface-bg);
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 16px;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 .history-entry.current {
   background: var(--history-highlight-bg);
   border-color: var(--accent-color-hover);
+}
+.history-entry.is-clickable {
+  cursor: pointer;
+}
+.history-entry.is-clickable:hover {
+  background: color-mix(in srgb, var(--accent-color) 12%, var(--surface-bg) 88%);
+  border-color: var(--accent-color);
+}
+.history-entry__content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .history-entry__title {
   font-weight: 600;
@@ -577,6 +593,57 @@ button.danger:hover {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+.history-entry__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 42px;
+}
+.history-entry__actions .table-tooltip {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  position: relative;
+}
+.history-entry__actions .tooltiptext {
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+.history-entry__action {
+  border-radius: 8px;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.history-entry__action--delete {
+  background: var(--danger-color);
+  color: var(--on-accent);
+  border: 1px solid var(--danger-color);
+}
+.history-entry__action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.history-entry__action--delete:not(:disabled):hover {
+  background: var(--danger-color-dark);
+  transform: translateY(-1px);
+}
+.history-entry__action--delete:disabled {
+  background: var(--danger-color);
+  transform: none;
+}
+.history-entry__action i {
+  pointer-events: none;
 }
 .history-empty {
   margin: 0;
@@ -1066,7 +1133,7 @@ a:visited {
   background-color: var(--tooltip-bg);
   color: var(--tooltip-color);
   font-size: 0.9rem;
-  z-index: 901;
+  z-index: 1200;
   pointer-events: none; /* avoid interfering with mouse events */
   box-shadow: var(--tooltip-shadow);
 }

@@ -299,6 +299,40 @@ def history(category=None):
         return jsonify({"status": "missing"}), 404
     return jsonify(result)
 
+def history_set_saved(category=None):
+    data = request.json
+    url = data.get("url")
+    entry_id = data.get("entry_id")
+    if not url or entry_id is None:
+        return jsonify({"status": "missing"}), 400
+    try:
+        entry_id = int(entry_id)
+    except (TypeError, ValueError):
+        return jsonify({"status": "invalid_entry"}), 400
+    entry = db.get_history_entry(url, entry_id)
+    if not entry:
+        return jsonify({"status": "missing"}), 404
+    db.set_last_saved(url, entry["last_found"] or "N/A")
+    return jsonify({"status": "success"})
+
+def history_delete_entry(category=None):
+    data = request.json
+    url = data.get("url")
+    entry_id = data.get("entry_id")
+    if not url or entry_id is None:
+        return jsonify({"status": "missing"}), 400
+    try:
+        entry_id = int(entry_id)
+    except (TypeError, ValueError):
+        return jsonify({"status": "invalid_entry"}), 400
+    try:
+        deleted = db.delete_history_entry(url, entry_id)
+    except ValueError as exc:
+        return jsonify({"status": "action_invalid", "error": str(exc)}), 400
+    if not deleted:
+        return jsonify({"status": "missing"}), 404
+    return jsonify({"status": "success"})
+
 def favorite_link(category=None):
     data = request.json
     target_url = data.get("url")
@@ -387,6 +421,8 @@ app.add_url_rule("/edit", endpoint="main_edit", view_func=lambda: edit_link("mai
 app.add_url_rule("/remove", endpoint="main_remove", view_func=lambda: remove_link("main"), methods=["POST"])
 app.add_url_rule("/favorite", endpoint="main_favorite", view_func=lambda: favorite_link("main"), methods=["POST"])
 app.add_url_rule("/history", endpoint="main_history", view_func=lambda: history("main"), methods=["POST"])
+app.add_url_rule("/history/set_saved", endpoint="main_history_set_saved", view_func=lambda: history_set_saved("main"), methods=["POST"])
+app.add_url_rule("/history/delete", endpoint="main_history_delete", view_func=lambda: history_delete_entry("main"), methods=["POST"])
 
 # dynamically add routes for each category
 for category in CATEGORY_PREFIXES:
@@ -443,6 +479,18 @@ for category in CATEGORY_PREFIXES:
         view_func=lambda cat=category: history(cat),
         methods=["POST"]
     )
+    app.add_url_rule(
+        f"/{category}/history/set_saved",
+        endpoint=f"{category}_history_set_saved",
+        view_func=lambda cat=category: history_set_saved(cat),
+        methods=["POST"],
+    )
+    app.add_url_rule(
+        f"/{category}/history/delete",
+        endpoint=f"{category}_history_delete",
+        view_func=lambda cat=category: history_delete_entry(cat),
+        methods=["POST"],
+    )
     
 @app.route("/api/categories")
 def get_categories():
@@ -451,4 +499,4 @@ def get_categories():
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
     schedule_updates()
-    app.run(host="0.0.0.0", debug=False, port=555)
+    app.run(host="0.0.0.0", debug=True, port=555)

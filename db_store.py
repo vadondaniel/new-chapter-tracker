@@ -279,13 +279,14 @@ class ChapterDatabase:
                 return None
             entries = conn.execute(
                 """
-                SELECT last_found, timestamp, retrieved_at
+                SELECT id, last_found, timestamp, retrieved_at
                 FROM scraped_entries
                 WHERE link_id = ?
                 ORDER BY id DESC
                 """,
                 (link["id"],),
             ).fetchall()
+        latest_id = entries[0]["id"] if entries else None
         return {
             "url": link["url"],
             "name": link["name"],
@@ -296,13 +297,56 @@ class ChapterDatabase:
             "free_only": bool(link["free_only"]),
             "history": [
                 {
+                    "entry_id": row["id"],
                     "last_found": row["last_found"],
                     "timestamp": row["timestamp"],
                     "retrieved_at": row["retrieved_at"],
+                    "is_latest": row["id"] == latest_id,
                 }
                 for row in entries
             ],
         }
+
+    def get_history_entry(self, url: str, entry_id: int) -> Optional[Dict[str, Any]]:
+        link_id = self._get_link_id(url)
+        if not link_id:
+            return None
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT id, last_found
+                FROM scraped_entries
+                WHERE link_id = ? AND id = ?
+                """,
+                (link_id, entry_id),
+            ).fetchone()
+        return row
+
+    def delete_history_entry(self, url: str, entry_id: int) -> bool:
+        link_id = self._get_link_id(url)
+        if not link_id:
+            return False
+        with self._connect() as conn:
+            latest = conn.execute(
+                """
+                SELECT id
+                FROM scraped_entries
+                WHERE link_id = ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (link_id,),
+            ).fetchone()
+            if latest and latest["id"] == entry_id:
+                raise ValueError("Cannot delete the latest history entry")
+            result = conn.execute(
+                """
+                DELETE FROM scraped_entries
+                WHERE link_id = ? AND id = ?
+                """,
+                (link_id, entry_id),
+            )
+        return result.rowcount > 0
 
     def update_scraped_entry(
         self,

@@ -1,6 +1,7 @@
 var socket = io();
 
 let PREFIXES = [];
+let historyContext = null;
 
 async function loadPrefixes() {
   const response = await fetch("/api/categories");
@@ -461,6 +462,10 @@ function hideHistoryModal() {
 function openHistoryModal(data, supportsFree) {
   const backdrop = document.getElementById("historyModalBackdrop");
   if (!backdrop) return;
+  historyContext = {
+    url: data.url,
+    supportsFree: Boolean(supportsFree),
+  };
   const title = document.getElementById("historyModalTitle");
   const addedAt = document.getElementById("historyAddedAt");
   const lastAttempt = document.getElementById("historyLastAttempt");
@@ -513,31 +518,138 @@ function openHistoryModal(data, supportsFree) {
         metaEl.appendChild(timestampEl);
         metaEl.appendChild(retrievedEl);
 
-        entryEl.appendChild(titleEl);
-        entryEl.appendChild(metaEl);
+        const contentEl = document.createElement("div");
+        contentEl.className = "history-entry__content";
+        contentEl.appendChild(titleEl);
+        contentEl.appendChild(metaEl);
+
+        const actionsEl = document.createElement("div");
+        actionsEl.className = "history-entry__actions";
+        const deleteWrapper = document.createElement("div");
+        deleteWrapper.className = "table-tooltip";
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "history-entry__action history-entry__action--delete";
+        const tooltip = document.createElement("span");
+        tooltip.className = "tooltiptext";
+        const locked = entry.is_latest || isCurrent;
+        if (locked) {
+          deleteBtn.innerHTML = '<i class="fas fa-lock"></i>';
+          tooltip.textContent = entry.is_latest
+            ? "Latest"
+            : "Saved";
+        } else {
+          deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+          tooltip.textContent = "Delete";
+          deleteBtn.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            if (
+              confirm(
+                "Delete this historical chapter entry? This cannot be undone."
+              )
+            ) {
+              deleteHistoryEntry(entry.entry_id);
+            }
+          });
+        }
+        deleteBtn.disabled = locked;
+        deleteWrapper.appendChild(deleteBtn);
+        deleteWrapper.appendChild(tooltip);
+        actionsEl.appendChild(deleteWrapper);
+
+        entryEl.appendChild(contentEl);
+        entryEl.appendChild(actionsEl);
+
+        entryEl.dataset.entryId = entry.entry_id || "";
+        entryEl.classList.toggle("is-clickable", !isCurrent);
+        if (!isCurrent) {
+          entryEl.addEventListener("click", () => saveHistoryEntry(entry.entry_id));
+        } else {
+          entryEl.removeAttribute("title");
+        }
         list.appendChild(entryEl);
       });
     }
+    setupFloatingTooltips(list);
   }
 
   backdrop.classList.remove("hidden");
 }
 
-function viewHistory(url, supportsFree) {
+async function fetchHistory(url) {
   const path = actionPath("history");
-  showSpinner("Loading history...");
-  fetch(path, {
+  const response = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
-  })
-    .then(async (response) => {
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.status || "Unable to load history");
-      }
-      return payload;
-    })
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.status || "Unable to load history");
+  }
+  return payload;
+}
+
+async function refreshHistoryModal() {
+  if (!historyContext) return;
+  try {
+    const data = await fetchHistory(historyContext.url);
+    openHistoryModal(data, historyContext.supportsFree);
+  } catch (error) {
+    console.error("Error refreshing history:", error);
+    alert("Unable to refresh history.");
+  }
+}
+
+async function performHistoryAction(action, payload, spinnerMessage) {
+  if (!historyContext) return;
+  showSpinner(spinnerMessage);
+  try {
+    const response = await fetch(actionPath(action), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: historyContext.url, ...payload }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || data.status || "Unable to perform action");
+    }
+    await refreshHistoryModal();
+    await refreshChapterTables().catch((error) =>
+      console.error("Error refreshing chapters after history action:", error)
+    );
+  } catch (error) {
+    console.error("Error performing history action:", error);
+    alert("Unable to perform history action.");
+  } finally {
+    hideSpinner();
+  }
+}
+
+function saveHistoryEntry(entryId) {
+  if (!entryId) return;
+  performHistoryAction(
+    "history/set_saved",
+    { entry_id: entryId },
+    "Saving history entry..."
+  );
+}
+
+function deleteHistoryEntry(entryId) {
+  if (!entryId) return;
+  performHistoryAction(
+    "history/delete",
+    { entry_id: entryId },
+    "Deleting history entry..."
+  );
+}
+
+function viewHistory(url, supportsFree) {
+  historyContext = {
+    url,
+    supportsFree: Boolean(supportsFree),
+  };
+  showSpinner("Loading history...");
+  fetchHistory(url)
     .then((data) => openHistoryModal(data, supportsFree))
     .catch((error) => {
       console.error("Error loading history:", error);
