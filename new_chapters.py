@@ -1,4 +1,5 @@
 import os
+import math
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -82,6 +83,8 @@ def parse_free_only(value, default):
     if value is None:
         return default
     value_str = str(value).strip().lower()
+    if not value_str:
+        return default
     return value_str in {"1", "true", "yes", "y"}
 
 
@@ -107,6 +110,9 @@ def parse_update_frequency(value, default):
     try:
         num = float(text)
     except ValueError:
+        return default
+
+    if not math.isfinite(num):
         return default
 
     freq = num * multiplier
