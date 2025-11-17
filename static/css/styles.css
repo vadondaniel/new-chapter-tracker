@@ -163,6 +163,33 @@ body {
   padding: 20px;
 }
 
+/* ========= Responsive Adjustments ========= */
+@media (max-width: 600px) {
+  table th,
+  table td {
+    font-size: 0.85rem;
+    padding: 8px 10px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  /* Buttons scale down */
+  button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  table td button {
+    padding: 4px 8px;
+  }
+}
+
 /* ========= Headings ========= */
 h1 {
   font-size: 2.2rem;
@@ -245,10 +272,12 @@ h2.toggle::after {
 }
 
 .table-wrapper {
+  width: 100%;
   background: var(--surface-bg);
   border-radius: 12px;
   box-shadow: var(--shadow-card);
   overflow: hidden; /* keeps inner table contents within rounded corners */
+  overflow-x: auto;
   margin: 16px 0;
 }
 
@@ -1163,39 +1192,6 @@ a:visited {
   pointer-events: none;
 }
 
-/* Ensure tables are scrollable on small screens */
-.table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-}
-
-/* Responsive tables: shrink text on small screens */
-@media (max-width: 600px) {
-  table th,
-  table td {
-    font-size: 0.85rem;
-    padding: 8px 10px;
-  }
-
-  h1 {
-    font-size: 1.6rem;
-  }
-
-  h2 {
-    font-size: 1.2rem;
-  }
-
-  /* Buttons scale down */
-  button {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-  }
-
-  table td button {
-    padding: 4px 8px;
-  }
-}
-
 /* ========= Status Messages ========= */
 .status-box {
   margin: 15px 0;
@@ -1235,6 +1231,7 @@ a:visited {
   color: var(--info-color);
 }
 
+/* ========= Animations ========= */
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -1245,6 +1242,7 @@ a:visited {
     transform: translateY(0);
   }
 }
+
 .table-wrapper,
 .status-box {
   animation: fadeUp 0.4s ease both;
