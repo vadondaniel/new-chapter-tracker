@@ -171,8 +171,20 @@ def index(category=None):
     differences = {url: data for url, data in previous_data.items() if data["last_found"] != data["last_saved"]}
     same_data = {url: data for url, data in previous_data.items() if data["last_found"] == data["last_saved"]}
 
-    differences = dict(sorted(differences.items(), key=lambda x: x[1]["timestamp"], reverse=True))
-    same_data = dict(sorted(same_data.items(), key=lambda x: x[1]["timestamp"], reverse=True))
+    def sort_entries_by_favorite_then_time(entries):
+        return dict(
+            sorted(
+                entries.items(),
+                key=lambda item: (
+                    1 if item[1].get("favorite") else 0,
+                    item[1].get("timestamp") or "",
+                ),
+                reverse=True,
+            )
+        )
+
+    differences = sort_entries_by_favorite_then_time(differences)
+    same_data = sort_entries_by_favorite_then_time(same_data)
 
     logging.info(f"Last full update ({update_type}): {last_full_update[update_type]}")
     return render_template(

@@ -86,7 +86,7 @@
           <th></th>
         </thead>
         {% for url, data in rows.items() %}
-        <tr>
+        <tr class="{% if data.favorite %}favorite-row{% endif %}">
           <td>
             <div class="table-tooltip">
               <a href="{{ url }}" target="_blank" class="domain-tooltip">

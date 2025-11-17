@@ -131,9 +131,17 @@ td {
   vertical-align: middle;
 }
 
- /* Row hover effect */
- tr:hover {
-  background-color: #f8fafc;
+/* Row hover effect */
+tr:hover {
+  background-color: #2ecc7010;
+}
+
+.favorite-row {
+  background: #2ecc7010;
+}
+
+.favorite-row:hover {
+  background: #2ecc7020;
 }
 
 /* Prevent header hover effect */
@@ -283,7 +291,7 @@ button.danger:hover {
 .menu-actions button.favorite {
   border-color: #2ecc71;
   background: transparent;
-  color: #27ae60;
+  color: #2ecc71;
 }
 .menu-actions button.favorite.favorited {
   background: #2ecc71;
