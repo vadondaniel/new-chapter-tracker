@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO
@@ -48,6 +48,32 @@ def annotate_support_flags(entries):
         url: {
             **data,
             "supports_free_toggle": scraping.supports_free_toggle(url),
+        }
+        for url, data in entries.items()
+    }
+
+
+def annotate_timestamp_display(entries):
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
+
+    def display_label(ts):
+        if not ts:
+            return ts or "Unknown"
+        try:
+            ts_date = datetime.strptime(ts[:10], "%Y/%m/%d").date()
+        except (ValueError, TypeError):
+            return ts
+        if ts_date == today:
+            return "Today"
+        if ts_date == yesterday:
+            return "Yesterday"
+        return ts
+
+    return {
+        url: {
+            **data,
+            "timestamp_display": display_label(data.get("timestamp")),
         }
         for url, data in entries.items()
     }
@@ -140,6 +166,7 @@ def schedule_updates():
 def index(category=None):
     update_type = resolve_category(category)
     previous_data = annotate_support_flags(db.get_scraped_data(update_type))
+    previous_data = annotate_timestamp_display(previous_data)
 
     differences = {url: data for url, data in previous_data.items() if data["last_found"] != data["last_saved"]}
     same_data = {url: data for url, data in previous_data.items() if data["last_found"] == data["last_saved"]}
