@@ -1,5 +1,6 @@
 /* ========= Theme Tokens ========= */
 :root {
+  /* Base palette */
   --page-bg: #f8fafc;
   --surface-bg: #fff;
   --text-color: #333;
@@ -13,38 +14,55 @@
   --border-strong: #ccc;
   --input-border: #ddd;
   --checkbox-border: #cbd5f0;
+  --input-bg: #fff;
+  --input-text: #1f2937;
+  --input-placeholder: #94a3b8;
+
+  /* Informational surfaces */
   --info-pill-bg: #e2e8f0;
+  --pill-bg: color-mix(in srgb, var(--accent-color) 5%, #fff 95%);
+  --pill-text: var(--accent-color-strong);
+  --pill-border: color-mix(in srgb, var(--accent-color) 45%, rgba(0, 0, 0, 0.2) 55%);
+  --history-highlight-bg: color-mix(in srgb, var(--accent-color) 15%, #fff 85%);
+  --status-message-bg: rgba(255, 255, 255, 0.95);
+  --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.15);
+
+  /* Accent palette */
   --accent-color: #2ecc71;
-  --accent-color-hover: #27ae60;
-  --accent-color-strong: #1f8a50;
-  --accent-overlay: rgba(46, 204, 113, 0.06);
-  --accent-overlay-strong: rgba(46, 204, 113, 0.12);
-  --accent-shadow: rgba(46, 204, 113, 0.22);
-  --accent-shadow-strong: rgba(46, 204, 113, 0.26);
-  --accent-shadow-deep: rgba(46, 204, 113, 0.3);
+  --accent-color-hover: color-mix(in srgb, var(--accent-color) 85%, #0b111d 15%);
+  --accent-color-strong: color-mix(in srgb, var(--accent-color) 70%, #0b111d 30%);
+  --accent-overlay: color-mix(in srgb, var(--accent-color) 10%, transparent 90%);
+  --accent-overlay-strong: color-mix(in srgb, var(--accent-color) 20%, transparent 80%);
+  --accent-shadow: 0 6px 18px color-mix(in srgb, var(--accent-color) 55%, rgba(0, 0, 0, 0.8) 45%);
+  --accent-shadow-strong: 0 10px 22px color-mix(in srgb, var(--accent-color) 45%, rgba(0, 0, 0, 0.9) 55%);
+  --accent-shadow-deep: color-mix(in srgb, var(--accent-color) 40%, rgba(0, 0, 0, 0.9) 60%);
   --on-accent: #fff;
+
+  /* Link states */
   --link-color: var(--accent-color);
   --link-color-hover: var(--accent-color-hover);
-  --link-color-active: #219150;
-  --link-shadow: 0 0 2px rgba(46, 204, 113, 0.3);
+  --link-color-active: color-mix(in srgb, var(--accent-color) 65%, #0b111d 35%);
+  --link-shadow: 0 0 2px color-mix(in srgb, var(--accent-color) 25%, rgba(0, 0, 0, 0.1) 75%);
+
+  /* Feedback colors */
   --success-color: #166534;
-  --success-border: #2ecc71;
+  --success-border: var(--accent-color);
   --success-bg: #f0fdf4;
   --info-color: #0ea5e9;
   --info-color-dark: #035388;
   --info-bg: #f0f9ff;
   --danger-color: #e74c3c;
   --danger-color-dark: #c0392b;
-  --pill-bg: #e9f5eb;
-  --pill-text: #1f8a50;
-  --pill-border: #cce7d5;
-  --history-highlight-bg: #e4f6ea;
   --error-color: #dc2626;
+
+  /* Tooltip tokens */
   --tooltip-bg: rgba(0, 0, 0, 0.92);
   --tooltip-color: #fff;
-  --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   --tooltip-radius: 4px;
+  --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   --text-shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.1);
+
+  /* Shadows & overlays */
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
   --shadow-status: 0 2px 6px rgba(0, 0, 0, 0.06);
   --shadow-modal: 0 24px 48px rgba(15, 23, 42, 0.35);
@@ -53,9 +71,7 @@
   --shadow-floating-error: 0 6px 16px rgba(0, 0, 0, 0.25);
   --modal-backdrop: rgba(0, 0, 0, 0.45);
   --overlay-backdrop: rgba(0, 0, 0, 0.4);
-  --status-message-bg: rgba(255, 255, 255, 0.95);
-  --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.15);
-  --hover-overlay: rgba(0, 0, 0, 0.06);
+  --hover-overlay: color-mix(in srgb, var(--text-color) 8%, transparent 92%);
   --progress-bg: rgba(0, 0, 0, 0.1);
   --spinner-border: #eee;
   --spinner-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -63,6 +79,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Palette overrides */
     --page-bg: #0f172a;
     --surface-bg: #111827;
     --text-color: #e2e8f0;
@@ -76,30 +93,23 @@
     --border-strong: rgba(148, 163, 184, 0.4);
     --input-border: rgba(148, 163, 184, 0.4);
     --checkbox-border: rgba(148, 163, 184, 0.4);
+    --input-bg: #1f2937;
+    --input-text: #e2e8f0;
+    --input-placeholder: #94a3b8;
+    --status-message-bg: rgba(15, 23, 42, 0.85);
+    --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.8);
+
+    /* Accent seed */
     --accent-color: #34d399;
-    --accent-color-hover: #059669;
-    --accent-color-strong: #10b981;
-    --accent-overlay: rgba(52, 211, 153, 0.08);
-    --accent-overlay-strong: rgba(52, 211, 153, 0.18);
-    --accent-shadow: rgba(52, 211, 153, 0.3);
-    --accent-shadow-strong: rgba(52, 211, 153, 0.4);
-    --accent-shadow-deep: rgba(52, 211, 153, 0.5);
-    --link-color-hover: var(--accent-color-hover);
-    --link-shadow: 0 0 2px rgba(52, 211, 153, 0.35);
-    --link-color-active: #22c55e;
-    --success-color: #4ade80;
-    --success-border: #34d399;
+
+    /* Feedback overrides */
     --success-bg: rgba(16, 185, 129, 0.15);
-    --info-color: #38bdf8;
-    --info-color-dark: #60a5fa;
     --info-bg: rgba(14, 165, 233, 0.16);
     --danger-color: #f87171;
     --danger-color-dark: #dc2626;
-    --pill-bg: rgba(16, 185, 129, 0.12);
-    --pill-text: #4ade80;
-    --history-highlight-bg: rgba(74, 222, 128, 0.2);
+
+    /* Tooltip & shadow contrasts */
     --tooltip-bg: rgba(15, 23, 42, 0.92);
-    --tooltip-color: #fff;
     --shadow-card: 0 2px 14px rgba(0, 0, 0, 0.7);
     --shadow-status: 0 2px 6px rgba(0, 0, 0, 0.7);
     --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.7);
@@ -108,12 +118,18 @@
     --shadow-floating-error: 0 6px 16px rgba(0, 0, 0, 0.7);
     --modal-backdrop: rgba(15, 23, 42, 0.8);
     --overlay-backdrop: rgba(15, 23, 42, 0.8);
-    --status-message-bg: rgba(15, 23, 42, 0.85);
-    --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.8);
-    --hover-overlay: rgba(255, 255, 255, 0.08);
+    --info-pill-bg: #202c3d;
+    --link-color-active: color-mix(in srgb, var(--accent-color) 80%, #0f172a 20%);
+
+    /* Misc */
+    --hover-overlay: color-mix(in srgb, var(--text-color) 12%, transparent 88%);
     --progress-bg: rgba(255, 255, 255, 0.08);
     --spinner-border: rgba(255, 255, 255, 0.25);
     --spinner-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+    --pill-bg: color-mix(in srgb, var(--accent-color) 5%, #111827 95%);
+    --pill-text: var(--accent-color);
+    --pill-border: color-mix(in srgb, var(--accent-color) 55%, rgba(255, 255, 255, 0.2) 45%);
+    --history-highlight-bg: color-mix(in srgb, var(--accent-color) 15%, #111827 85%);
   }
 }
 
@@ -593,6 +609,24 @@ button.danger:hover {
   padding: 10px 12px;
   border: 1px solid var(--input-border);
   border-radius: 6px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  background: var(--input-bg);
+  color: var(--input-text);
+}
+
+.modal-body input::placeholder,
+.modal-body textarea::placeholder {
+  color: var(--input-placeholder);
+}
+
+.modal-body textarea,
+.modal-body select {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  padding: 10px 12px;
   font-size: 0.95rem;
   box-sizing: border-box;
 }
