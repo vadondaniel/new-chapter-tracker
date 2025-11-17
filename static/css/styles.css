@@ -1,8 +1,127 @@
+/* ========= Theme Tokens ========= */
+:root {
+  --page-bg: #f8fafc;
+  --surface-bg: #fff;
+  --text-color: #333;
+  --heading-color: #222;
+  --subheading-color: #444;
+  --muted-color: #64748b;
+  --muted-strong: #475569;
+  --muted-alt: #4a5568;
+  --divider-color: #edf2f7;
+  --border-soft: #e5e7eb;
+  --border-strong: #ccc;
+  --input-border: #ddd;
+  --checkbox-border: #cbd5f0;
+  --info-pill-bg: #e2e8f0;
+  --accent-color: #2ecc71;
+  --accent-color-hover: #27ae60;
+  --accent-color-strong: #1f8a50;
+  --accent-overlay: rgba(46, 204, 113, 0.06);
+  --accent-overlay-strong: rgba(46, 204, 113, 0.12);
+  --accent-shadow: rgba(46, 204, 113, 0.22);
+  --accent-shadow-strong: rgba(46, 204, 113, 0.26);
+  --accent-shadow-deep: rgba(46, 204, 113, 0.3);
+  --on-accent: #fff;
+  --link-color: var(--accent-color);
+  --link-color-hover: var(--accent-color-hover);
+  --link-color-active: #219150;
+  --link-shadow: 0 0 2px rgba(46, 204, 113, 0.3);
+  --success-color: #166534;
+  --success-border: #2ecc71;
+  --success-bg: #f0fdf4;
+  --info-color: #0ea5e9;
+  --info-color-dark: #035388;
+  --info-bg: #f0f9ff;
+  --danger-color: #e74c3c;
+  --danger-color-dark: #c0392b;
+  --pill-bg: #e9f5eb;
+  --pill-text: #1f8a50;
+  --pill-border: #cce7d5;
+  --history-highlight-bg: #e4f6ea;
+  --error-color: #dc2626;
+  --tooltip-bg: rgba(0, 0, 0, 0.92);
+  --tooltip-color: #fff;
+  --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --tooltip-radius: 4px;
+  --text-shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-status: 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-modal: 0 24px 48px rgba(15, 23, 42, 0.35);
+  --shadow-modal-surface: 0 8px 30px rgba(0, 0, 0, 0.18);
+  --shadow-floating-menu: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-floating-error: 0 6px 16px rgba(0, 0, 0, 0.25);
+  --modal-backdrop: rgba(0, 0, 0, 0.45);
+  --overlay-backdrop: rgba(0, 0, 0, 0.4);
+  --status-message-bg: rgba(255, 255, 255, 0.95);
+  --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.15);
+  --hover-overlay: rgba(0, 0, 0, 0.06);
+  --progress-bg: rgba(0, 0, 0, 0.1);
+  --spinner-border: #eee;
+  --spinner-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #0f172a;
+    --surface-bg: #111827;
+    --text-color: #e2e8f0;
+    --heading-color: #f8fafc;
+    --subheading-color: #e2e8f0;
+    --muted-color: #94a3b8;
+    --muted-strong: #cbd5f0;
+    --muted-alt: #cbd5f0;
+    --divider-color: rgba(148, 163, 184, 0.3);
+    --border-soft: rgba(148, 163, 184, 0.3);
+    --border-strong: rgba(148, 163, 184, 0.4);
+    --input-border: rgba(148, 163, 184, 0.4);
+    --checkbox-border: rgba(148, 163, 184, 0.4);
+    --accent-color: #34d399;
+    --accent-color-hover: #059669;
+    --accent-color-strong: #10b981;
+    --accent-overlay: rgba(52, 211, 153, 0.08);
+    --accent-overlay-strong: rgba(52, 211, 153, 0.18);
+    --accent-shadow: rgba(52, 211, 153, 0.3);
+    --accent-shadow-strong: rgba(52, 211, 153, 0.4);
+    --accent-shadow-deep: rgba(52, 211, 153, 0.5);
+    --link-color-hover: var(--accent-color-hover);
+    --link-shadow: 0 0 2px rgba(52, 211, 153, 0.35);
+    --link-color-active: #22c55e;
+    --success-color: #4ade80;
+    --success-border: #34d399;
+    --success-bg: rgba(16, 185, 129, 0.15);
+    --info-color: #38bdf8;
+    --info-color-dark: #60a5fa;
+    --info-bg: rgba(14, 165, 233, 0.16);
+    --danger-color: #f87171;
+    --danger-color-dark: #dc2626;
+    --pill-bg: rgba(16, 185, 129, 0.12);
+    --pill-text: #4ade80;
+    --history-highlight-bg: rgba(74, 222, 128, 0.2);
+    --tooltip-bg: rgba(15, 23, 42, 0.92);
+    --tooltip-color: #fff;
+    --shadow-card: 0 2px 14px rgba(0, 0, 0, 0.7);
+    --shadow-status: 0 2px 6px rgba(0, 0, 0, 0.7);
+    --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.7);
+    --shadow-modal-surface: 0 8px 30px rgba(0, 0, 0, 0.7);
+    --shadow-floating-menu: 0 2px 12px rgba(0, 0, 0, 0.7);
+    --shadow-floating-error: 0 6px 16px rgba(0, 0, 0, 0.7);
+    --modal-backdrop: rgba(15, 23, 42, 0.8);
+    --overlay-backdrop: rgba(15, 23, 42, 0.8);
+    --status-message-bg: rgba(15, 23, 42, 0.85);
+    --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.8);
+    --hover-overlay: rgba(255, 255, 255, 0.08);
+    --progress-bg: rgba(255, 255, 255, 0.08);
+    --spinner-border: rgba(255, 255, 255, 0.25);
+    --spinner-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  }
+}
+
 /* ========= General Layout ========= */
 body {
   font-family: "Inter", sans-serif;
-  background-color: #f8fafc;
-  color: #333;
+  background-color: var(--page-bg);
+  color: var(--text-color);
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -18,7 +137,7 @@ body {
 h1 {
   font-size: 2.2rem;
   font-weight: 600;
-  color: #222;
+  color: var(--heading-color);
   margin: 20px 0 30px;
   text-align: center;
 }
@@ -26,14 +145,14 @@ h1 {
 h2 {
   font-size: 1.4rem;
   font-weight: 500;
-  color: #444;
+  color: var(--subheading-color);
   margin-top: 30px;
   margin-bottom: 10px;
 }
 
 .badge {
-  background: #2ecc71;
-  color: white;
+  background: var(--accent-color);
+  color: var(--on-accent);
   border-radius: 12px;
   font-size: 0.8rem;
   padding: 2px 8px;
@@ -88,9 +207,9 @@ h2.toggle.collapsed::after {
 }
 
 .table-wrapper {
-  background: white;
+  background: var(--surface-bg);
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-card);
   overflow: hidden; /* keeps inner table contents within rounded corners */
   margin: 16px 0;
 }
@@ -110,43 +229,43 @@ table, th, td {
 
 /* Header styling */
 thead {
-  background: #2ecc71;
+  background: var(--accent-color);
   border-bottom: none;
 }
 
 th {
-  color: white;
+  color: var(--on-accent);
   font-weight: 600;
   font-size: 0.95rem;
   padding: 16px;
   text-align: left;
   letter-spacing: 0.025em;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  text-shadow: var(--text-shadow-sm);
 }
 
 /* Cell styling */
 td {
   padding: 14px 16px;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid var(--divider-color);
   vertical-align: middle;
 }
 
 /* Row hover effect */
 tr:hover {
-  background-color: #2ecc7010;
+  background-color: var(--accent-overlay);
 }
 
 .favorite-row {
-  background: #2ecc7010;
+  background: var(--accent-overlay);
 }
 
 .favorite-row:hover {
-  background: #2ecc7020;
+  background: var(--accent-overlay-strong);
 }
 
 /* Prevent header hover effect */
 thead tr:hover {
-  background-color: #2ecc71;
+  background-color: var(--accent-color);
 }
 
 /* Last row shouldn't have a border */
@@ -157,7 +276,7 @@ tr:last-child td {
 /* Fixed-width columns */
 td[style*="white-space: nowrap"] {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--muted-color);
 }
 
 /* Status boxes inside tables */
@@ -180,8 +299,8 @@ td[style*="white-space: nowrap"] {
 
 /* ========= Buttons ========= */
 button {
-  background: #2ecc71;
-  color: white;
+  background: var(--accent-color);
+  color: var(--on-accent);
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -191,7 +310,7 @@ button {
 }
 
 button:hover {
-  background: #27ae60;
+  background: var(--accent-color-hover);
   transform: translateY(-1px);
 }
 
@@ -209,19 +328,19 @@ table td button {
 
 /* Danger buttons (like delete) */
 button.danger {
-  background: #e74c3c;
+  background: var(--danger-color);
 }
 
 button.danger:hover {
-  background: #c0392b;
+  background: var(--danger-color-dark);
 }
 
 #removeLinkForm button {
-  background: #e74c3c;
+  background: var(--danger-color);
 }
 
 #removeLinkForm button:hover {
-  background: #c0392b;
+  background: var(--danger-color-dark);
 }
 
 /* ========= Compact Menu ========= */
@@ -236,13 +355,13 @@ button.danger:hover {
   cursor: pointer;
   padding: 6px 8px;
   font-size: 16px;
-  color: #666;
+  color: var(--muted-color);
   border-radius: 6px;
   transition: background 0.2s;
 }
 
 .menu-toggle:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-overlay);
 }
 
 /* Compact menu that can be cloned to body */
@@ -253,10 +372,10 @@ button.danger:hover {
 .menu-actions.active {
   transform: translateY(90%);
   display: flex;
-  background: #fff;
-  border: 1px solid #ccc;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-floating-menu);
   gap: 6px;
   padding: 6px;
   z-index: 900;
@@ -282,26 +401,26 @@ button.danger:hover {
 
 /* center recheck visually and highlight it */
 .menu-actions button.recheck {
-  background: #2ecc71;
-  color: #fff;
+  background: var(--accent-color);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
 /* favorite + history styling */
 .menu-actions button.favorite {
-  border-color: #2ecc71;
+  border-color: var(--accent-color);
   background: transparent;
-  color: #2ecc71;
+  color: var(--accent-color);
 }
 .menu-actions button.favorite.favorited {
-  background: #2ecc71;
-  color: #fff;
+  background: var(--accent-color);
+  color: var(--on-accent);
 }
 
 /* delete/danger */
 .menu-actions button.danger {
-  background: #e74c3c;
-  color: #fff;
+  background: var(--danger-color);
+  color: var(--on-accent);
 }
 .menu-actions button:hover {
   transform: translateY(-1px);
@@ -321,10 +440,10 @@ button.danger:hover {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #2ecc71;
-  color: #fff;
+  background: var(--accent-color);
+  color: var(--on-accent);
   border: none;
-  box-shadow: 0 6px 18px rgba(46, 204, 113, 0.22);
+  box-shadow: var(--accent-shadow);
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -335,7 +454,7 @@ button.danger:hover {
 }
 .floating-add:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 22px rgba(46, 204, 113, 0.26);
+  box-shadow: var(--accent-shadow-strong);
 }
 
 #historyModalBackdrop {
@@ -345,21 +464,21 @@ button.danger:hover {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--modal-backdrop);
   z-index: 1000;
 }
 #historyModalBackdrop.hidden {
   display: none;
 }
 .history-modal {
-  background: #fff;
+  background: var(--surface-bg);
   border-radius: 16px;
   padding: 24px;
   width: min(540px, 100%);
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.35);
+  box-shadow: var(--shadow-modal);
 }
 .history-modal__header h3 {
   margin: 0;
@@ -368,7 +487,7 @@ button.danger:hover {
 .history-modal__meta {
   margin: 8px 0;
   font-size: 0.9rem;
-  color: #4a5568;
+  color: var(--muted-alt);
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
@@ -383,9 +502,9 @@ button.danger:hover {
   border-radius: 999px;
   padding: 4px 12px;
   font-size: 0.8rem;
-  background: #e9f5eb;
-  color: #1f8a50;
-  border: 1px solid #cce7d5;
+  background: var(--pill-bg);
+  color: var(--pill-text);
+  border: 1px solid var(--pill-border);
 }
 .history-list {
   margin-top: 16px;
@@ -394,17 +513,17 @@ button.danger:hover {
   gap: 12px;
 }
 .history-entry {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 12px;
-  background: #fff;
+  background: var(--surface-bg);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 .history-entry.current {
-  background: #e4f6ea;
-  border-color: #27ae60;
+  background: var(--history-highlight-bg);
+  border-color: var(--accent-color-hover);
 }
 .history-entry__title {
   font-weight: 600;
@@ -413,7 +532,7 @@ button.danger:hover {
   display: flex;
   gap: 10px;
   font-size: 0.85rem;
-  color: #4a5568;
+  color: var(--muted-alt);
   flex-wrap: wrap;
 }
 .history-entry__meta span {
@@ -423,7 +542,7 @@ button.danger:hover {
 }
 .history-empty {
   margin: 0;
-  color: #475569;
+  color: var(--muted-strong);
 }
 
 /* Modal */
@@ -438,7 +557,7 @@ button.danger:hover {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--overlay-backdrop);
   backdrop-filter: blur(2px);
 }
 
@@ -449,10 +568,10 @@ button.danger:hover {
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(520px, 92%);
-  background: #fff;
+  background: var(--surface-bg);
   padding: 18px;
   border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-modal-surface);
   z-index: 902;
   display: flex;
   flex-direction: column;
@@ -472,7 +591,7 @@ button.danger:hover {
 }
 .modal-body input {
   padding: 10px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--input-border);
   border-radius: 6px;
   font-size: 0.95rem;
   box-sizing: border-box;
@@ -483,7 +602,7 @@ button.danger:hover {
   align-items: center;
   gap: 10px;
   font-size: 0.95rem;
-  color: #1f2937;
+  color: var(--text-color);
   margin-top: 8px;
   cursor: pointer;
   user-select: none;
@@ -501,20 +620,20 @@ button.danger:hover {
 .modal-checkbox .custom-checkbox {
   width: 18px;
   height: 18px;
-  border: 2px solid #cbd5f0;
+  border: 2px solid var(--checkbox-border);
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: border-color 0.2s, background 0.2s;
-  background: #fff;
+  background: var(--surface-bg);
 }
 
 .modal-checkbox .custom-checkbox::after {
   content: "";
   width: 6px;
   height: 10px;
-  border: solid #fff;
+  border: solid var(--surface-bg);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
   opacity: 0;
@@ -522,8 +641,8 @@ button.danger:hover {
 }
 
 .modal-checkbox input[type="checkbox"]:checked + .custom-checkbox {
-  background: #2ecc71;
-  border-color: #2ecc71;
+  background: var(--accent-color);
+  border-color: var(--accent-color);
 }
 
 .modal-checkbox input[type="checkbox"]:checked + .custom-checkbox::after {
@@ -535,7 +654,7 @@ button.danger:hover {
 }
 
 .modal-checkbox .modal-info {
-  color: #64748b;
+  color: var(--muted-color);
   margin-left: auto;
   justify-content: flex-end;
 }
@@ -564,7 +683,7 @@ button.danger:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #e2e8f0;
+  background: var(--info-pill-bg);
   cursor: help;
   position: relative;
   overflow: visible;
@@ -606,7 +725,7 @@ button.danger:hover {
 }
 
 .error-timestamp {
-  color: #dc2626;
+  color: var(--error-color);
   font-weight: 600;
 }
 
@@ -626,7 +745,7 @@ button.danger:hover {
   max-width: 320px;
   white-space: normal;
   text-align: left;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-floating-error);
   pointer-events: none;
   transition: opacity 0.15s ease;
   z-index: 1300;
@@ -651,12 +770,12 @@ button.danger:hover {
   cursor: pointer;
 }
 .modal-actions button.danger {
-  background: #e74c3c;
-  color: #fff;
+  background: var(--danger-color);
+  color: var(--on-accent);
 }
 .modal-actions button:not(.danger) {
-  background: #2ecc71;
-  color: #fff;
+  background: var(--accent-color);
+  color: var(--on-accent);
 }
 
 /* small screens: full width modal-box */
@@ -676,7 +795,7 @@ button.danger:hover {
   width: 100%;
   height: 100%;
   backdrop-filter: blur(4px);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--overlay-backdrop);
   z-index: 1000;
   display: flex;
   justify-content: center;
@@ -699,13 +818,13 @@ button.danger:hover {
 }
 
 #spinner {
-  border: 4px solid #eee;
-  border-top: 4px solid #2ecc71;
+  border: 4px solid var(--spinner-border);
+  border-top: 4px solid var(--accent-color);
   border-radius: 50%;
   width: 60px;
   height: 60px;
   animation: spin 1s linear infinite;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--spinner-shadow);
   margin-bottom: 15px;
 }
 
@@ -719,12 +838,12 @@ button.danger:hover {
 }
 
 #statusMessage {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: var(--status-message-bg);
   padding: 12px 18px;
   border-radius: 6px;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--status-message-shadow);
   font-size: 15px;
-  color: #333;
+  color: var(--text-color);
   text-align: center;
   margin-bottom: 10px;
 }
@@ -734,7 +853,7 @@ button.danger:hover {
   width: 100%;
   max-width: 250px;
   height: 6px;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--progress-bg);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -742,7 +861,7 @@ button.danger:hover {
 #progressFill {
   width: 0;
   height: 100%;
-  background-color: #2ecc71;
+  background-color: var(--accent-color);
   transition: width 0.3s ease;
 }
 
@@ -766,7 +885,7 @@ button.danger:hover {
 
 /* ========= Link Styling ========= */
 a {
-  color: #2ecc71;
+  color: var(--accent-color);
   text-decoration: none;
   font-weight: 600;
   transition: text-shadow 0.1s ease;
@@ -774,27 +893,20 @@ a {
 
 a:hover,
 a:focus {
-  color: #27ae60;
+  color: var(--accent-color-hover);
   text-decoration: underline;
-  text-shadow: 0 0 2px rgba(46, 204, 113, 0.3);
+  text-shadow: var(--link-shadow);
 }
 
 a:active {
-  color: #219150;
+  color: var(--link-color-active);
 }
 
 a:visited {
-  color: #2ecc71;
+  color: var(--accent-color);
 }
 
 /* ========= Tooltip ========= */
-:root {
-  --tooltip-bg: rgba(0, 0, 0, 0.92);
-  --tooltip-color: #fff;
-  --tooltip-radius: 4px;
-  --tooltip-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-}
-
 /* Generic tooltip container */
 .tooltip,
 .table-tooltip,
@@ -872,7 +984,7 @@ a:visited {
   text-align: center;
   white-space: normal;
   max-width: 240px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--tooltip-shadow);
   pointer-events: none;
   z-index: 905;
 }
@@ -958,8 +1070,8 @@ a:visited {
   display: flex;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  background: #fff;
+  box-shadow: var(--shadow-status);
+  background: var(--surface-bg);
 }
 
 .status-box i {
@@ -968,24 +1080,24 @@ a:visited {
 
 /* Success style (all up to date) */
 .status-success {
-  border-left: 5px solid #2ecc71;
-  color: #166534;
-  background: #f0fdf4;
+  border-left: 5px solid var(--success-border);
+  color: var(--success-color);
+  background: var(--success-bg);
 }
 
 .status-success i {
-  color: #2ecc71;
+  color: var(--accent-color);
 }
 
 /* Info style (no entries tracked yet) */
 .status-info {
-  border-left: 5px solid #0ea5e9;
-  color: #035388;
-  background: #f0f9ff;
+  border-left: 5px solid var(--info-color);
+  color: var(--info-color-dark);
+  background: var(--info-bg);
 }
 
 .status-info i {
-  color: #0ea5e9;
+  color: var(--info-color);
 }
 
 @keyframes fadeUp {
