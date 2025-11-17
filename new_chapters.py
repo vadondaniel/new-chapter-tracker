@@ -215,6 +215,19 @@ def recheck(category=None):
         db.record_failures(failure)
     return jsonify({"status": "success"})
 
+def favorite_link(category=None):
+    data = request.json
+    target_url = data.get("url")
+    favorite_flag = data.get("favorite")
+    if target_url is None or favorite_flag is None:
+        return jsonify({"status": "missing"}), 400
+    if isinstance(favorite_flag, str):
+        favorite_flag = favorite_flag.strip().lower() in {"true", "1", "yes"}
+    else:
+        favorite_flag = bool(favorite_flag)
+    db.update_link_metadata(target_url, favorite=favorite_flag)
+    return jsonify({"status": "success"})
+
 def add_link(category=None):
     data = request.json
     freq, free_only = get_link_metadata(data)
@@ -288,6 +301,7 @@ app.add_url_rule("/recheck", endpoint="main_recheck", view_func=lambda: recheck(
 app.add_url_rule("/add", endpoint="main_add", view_func=lambda: add_link("main"), methods=["POST"])
 app.add_url_rule("/edit", endpoint="main_edit", view_func=lambda: edit_link("main"), methods=["POST"])
 app.add_url_rule("/remove", endpoint="main_remove", view_func=lambda: remove_link("main"), methods=["POST"])
+app.add_url_rule("/favorite", endpoint="main_favorite", view_func=lambda: favorite_link("main"), methods=["POST"])
 
 # dynamically add routes for each category
 for category in CATEGORIES:
@@ -330,6 +344,12 @@ for category in CATEGORIES:
         f"/{category}/remove",
         endpoint=f"{category}_remove",
         view_func=lambda cat=category: remove_link(cat),
+        methods=["POST"]
+    )
+    app.add_url_rule(
+        f"/{category}/favorite",
+        endpoint=f"{category}_favorite",
+        view_func=lambda cat=category: favorite_link(cat),
         methods=["POST"]
     )
     

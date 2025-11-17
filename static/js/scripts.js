@@ -140,6 +140,30 @@ function removeLinkByUrl(url) {
     });
 }
 
+function toggleFavorite(url, container) {
+  const isFavorite = container.dataset.favorite === "true";
+  const nextState = !isFavorite;
+  container.dataset.favorite = nextState.toString();
+  showSpinner(isFavorite ? "Removing favorite…" : "Marking favorite…");
+  const path = actionPath("favorite");
+  fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, favorite: !isFavorite }),
+  })
+    .then((response) => response.json())
+    .then(() => hideSpinner())
+    .then(() => location.reload())
+    .catch((error) => {
+      console.error("Error toggling favorite:", error);
+      hideSpinner();
+    });
+}
+
+function viewHistory(url) {
+  alert("History view is not implemented yet.");
+}
+
 function forceUpdate() {
   showSpinner("Fully updating database...");
   const path = actionPath("force_update");
@@ -443,7 +467,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // attach button handlers using the url from the original container
       const editBtn = clone.querySelector("button.edit");
+      const favoriteBtn = clone.querySelector("button.favorite");
       const recheckBtn = clone.querySelector("button.recheck");
+      const historyBtn = clone.querySelector("button.history");
       const deleteBtn = clone.querySelector("button.danger");
 
       if (editBtn)
@@ -456,6 +482,18 @@ document.addEventListener("DOMContentLoaded", function () {
         recheckBtn.addEventListener("click", (ev) => {
           ev.stopPropagation();
           recheckChapter(url);
+          clone.remove();
+        });
+      if (favoriteBtn)
+        favoriteBtn.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          toggleFavorite(url, container);
+          clone.remove();
+        });
+      if (historyBtn)
+        historyBtn.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          viewHistory(url);
           clone.remove();
         });
       if (deleteBtn)

@@ -128,6 +128,7 @@
               data-update-frequency="{{ data.update_frequency }}"
               data-free-only="{{ 'true' if data.free_only else 'false' }}"
               data-supports-free="{{ 'true' if data.supports_free_toggle else 'false' }}"
+              data-favorite="{{ 'true' if data.favorite else 'false' }}"
             >
               <button
                 class="menu-toggle"
@@ -145,10 +146,22 @@
                   <span class="tooltiptext">Edit</span>
                 </div>
                 <div class="table-tooltip">
+                  <button class="favorite{% if data.favorite %} favorited{% endif %}">
+                    <i class="{% if data.favorite %}fas{% else %}far{% endif %} fa-star"></i>
+                  </button>
+                  <span class="tooltiptext">Favorite</span>
+                </div>
+                <div class="table-tooltip">
                   <button class="recheck">
                     <i class="fas fa-sync-alt"></i>
                   </button>
                   <span class="tooltiptext">Recheck</span>
+                </div>
+                <div class="table-tooltip">
+                  <button class="history">
+                    <i class="fas fa-history"></i>
+                  </button>
+                  <span class="tooltiptext">History</span>
                 </div>
                 <div class="table-tooltip">
                   <button class="danger">

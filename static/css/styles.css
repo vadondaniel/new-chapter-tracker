@@ -265,10 +265,11 @@ button.danger:hover {
 .menu-actions button {
   padding: 6px 10px;
   border-radius: 6px;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
   font-size: 0.9rem;
   transition: transform 0.08s ease;
+  box-sizing: border-box;
 }
 
 /* center recheck visually and highlight it */
@@ -276,6 +277,17 @@ button.danger:hover {
   background: #2ecc71;
   color: #fff;
   font-weight: 600;
+}
+
+/* favorite + history styling */
+.menu-actions button.favorite {
+  border-color: #2ecc71;
+  background: transparent;
+  color: #27ae60;
+}
+.menu-actions button.favorite.favorited {
+  background: #2ecc71;
+  color: #fff;
 }
 
 /* delete/danger */
