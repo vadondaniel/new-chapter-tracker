@@ -1,6 +1,6 @@
 /* ========= Theme Tokens ========= */
 :root {
-  /* Base palette */
+  /* Neutrals */
   --page-bg: #f8fafc;
   --surface-bg: #fff;
   --text-color: #333;
@@ -12,6 +12,8 @@
   --divider-color: #edf2f7;
   --border-soft: #e5e7eb;
   --border-strong: #ccc;
+
+  /* Form controls */
   --input-border: #ddd;
   --checkbox-border: #cbd5f0;
   --input-bg: #fff;
@@ -79,7 +81,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Palette overrides */
+    /* Neutrals */
     --page-bg: #0f172a;
     --surface-bg: #111827;
     --text-color: #e2e8f0;
@@ -91,25 +93,45 @@
     --divider-color: rgba(148, 163, 184, 0.3);
     --border-soft: rgba(148, 163, 184, 0.3);
     --border-strong: rgba(148, 163, 184, 0.4);
+
+    /* Form controls */
     --input-border: rgba(148, 163, 184, 0.4);
     --checkbox-border: rgba(148, 163, 184, 0.4);
     --input-bg: #1f2937;
     --input-text: #e2e8f0;
     --input-placeholder: #94a3b8;
+
+    /* Informational surfaces */
+    --info-pill-bg: rgba(15, 23, 42, 0.4);
+    --pill-bg: color-mix(in srgb, var(--accent-color) 5%, #111827 95%);
+    --pill-text: var(--accent-color);
+    --pill-border: color-mix(in srgb, var(--accent-color) 55%, rgba(255, 255, 255, 0.2) 45%);
+    --history-highlight-bg: color-mix(in srgb, var(--accent-color) 15%, #111827 85%);
     --status-message-bg: rgba(15, 23, 42, 0.85);
     --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.8);
 
-    /* Accent seed */
+    /* Accent seed + links */
     --accent-color: #34d399;
+    --accent-color-hover: color-mix(in srgb, var(--accent-color) 85%, #0f172a 15%);
+    --accent-color-strong: color-mix(in srgb, var(--accent-color) 70%, #0f172a 30%);
+    --accent-overlay: color-mix(in srgb, var(--accent-color) 10%, transparent 90%);
+    --accent-overlay-strong: color-mix(in srgb, var(--accent-color) 20%, transparent 80%);
+    --link-color-active: color-mix(in srgb, var(--accent-color) 80%, #0f172a 20%);
+    --link-shadow: 0 0 2px color-mix(in srgb, var(--accent-color) 25%, rgba(0, 0, 0, 0.4) 75%);
 
-    /* Feedback overrides */
+    /* Feedback colors */
+    --success-color: #4ade80;
     --success-bg: rgba(16, 185, 129, 0.15);
     --info-bg: rgba(14, 165, 233, 0.16);
     --danger-color: #f87171;
     --danger-color-dark: #dc2626;
 
-    /* Tooltip & shadow contrasts */
+    /* Tooltip tokens */
     --tooltip-bg: rgba(15, 23, 42, 0.92);
+    --tooltip-color: #fff;
+    --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+    /* Shadows & overlays */
     --shadow-card: 0 2px 14px rgba(0, 0, 0, 0.7);
     --shadow-status: 0 2px 6px rgba(0, 0, 0, 0.7);
     --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.7);
@@ -118,18 +140,10 @@
     --shadow-floating-error: 0 6px 16px rgba(0, 0, 0, 0.7);
     --modal-backdrop: rgba(15, 23, 42, 0.8);
     --overlay-backdrop: rgba(15, 23, 42, 0.8);
-    --info-pill-bg: #202c3d;
-    --link-color-active: color-mix(in srgb, var(--accent-color) 80%, #0f172a 20%);
-
-    /* Misc */
     --hover-overlay: color-mix(in srgb, var(--text-color) 12%, transparent 88%);
     --progress-bg: rgba(255, 255, 255, 0.08);
     --spinner-border: rgba(255, 255, 255, 0.25);
     --spinner-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
-    --pill-bg: color-mix(in srgb, var(--accent-color) 5%, #111827 95%);
-    --pill-text: var(--accent-color);
-    --pill-border: color-mix(in srgb, var(--accent-color) 55%, rgba(255, 255, 255, 0.2) 45%);
-    --history-highlight-bg: color-mix(in srgb, var(--accent-color) 15%, #111827 85%);
   }
 }
 
