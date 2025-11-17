@@ -497,33 +497,6 @@ button.danger:hover {
   gap: 4px;
 }
 
-.timestamp-tooltiptext {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translate(-50%, 6px);
-  margin-top: 2px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.92);
-  color: #fff;
-  font-size: 0.75rem;
-  text-align: center;
-  white-space: normal;
-  max-width: 240px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  pointer-events: none;
-  z-index: 905;
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-.timestamp-text:hover .timestamp-tooltiptext {
-  visibility: visible;
-  opacity: 1;
-}
-
 .error-timestamp {
   color: #dc2626;
   font-weight: 600;
@@ -540,8 +513,8 @@ button.danger:hover {
   opacity: 0;
   padding: 6px 10px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.92);
-  color: #fff;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-color);
   max-width: 320px;
   white-space: normal;
   text-align: left;
@@ -707,6 +680,13 @@ a:visited {
 }
 
 /* ========= Tooltip ========= */
+:root {
+  --tooltip-bg: rgba(0, 0, 0, 0.92);
+  --tooltip-color: #fff;
+  --tooltip-radius: 4px;
+  --tooltip-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* Generic tooltip container */
 .tooltip,
 .table-tooltip,
@@ -720,10 +700,10 @@ a:visited {
 .table-tooltip .tooltiptext,
 .full-update-tooltip .tooltiptext {
   visibility: hidden;
-  background-color: black;
-  color: white;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-color);
   text-align: center;
-  border-radius: 4px;
+  border-radius: var(--tooltip-radius);
   padding: 3px 6px;
   position: absolute;
   white-space: nowrap;
@@ -769,19 +749,50 @@ a:visited {
   white-space: nowrap;
 }
 
+/* Timestamp tooltips share the same theme but stay anchored below the text */
+.timestamp-tooltiptext {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 6px);
+  margin-top: 2px;
+  padding: 4px 8px;
+  border-radius: var(--tooltip-radius);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-color);
+  font-size: 0.75rem;
+  text-align: center;
+  white-space: normal;
+  max-width: 240px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 905;
+}
+
+.timestamp-tooltiptext {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.timestamp-text:hover .timestamp-tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
 /* floating tooltip (moved to body to avoid clipping) */
 .tooltiptext.floating {
   position: absolute;
   transform: none !important;
   white-space: nowrap;
   padding: 4px 8px;
-  border-radius: 4px;
-  background-color: rgba(0, 0, 0, 0.92);
-  color: #fff;
-  font-size: 0 nine rem; /* keep small and single-line */
+  border-radius: var(--tooltip-radius);
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-color);
+  font-size: 0.9rem;
   z-index: 901;
   pointer-events: none; /* avoid interfering with mouse events */
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--tooltip-shadow);
 }
 
 /* ensure the original inline tooltip is still hidden (we use the floating one) */
