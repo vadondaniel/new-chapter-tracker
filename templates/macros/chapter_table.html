@@ -1,0 +1,108 @@
+{% macro render_chapter_table(rows, show_found_column=False, show_save_button=False) -%}
+<div class="table-wrapper">
+  <table border="1">
+    <thead>
+      <th>Name</th>
+      {% if show_found_column %}
+      <th>Last Saved Chapter</th>
+      {% else %}
+      <th>Last Chapter</th>
+      {% endif %}
+      {% if show_found_column %}
+      <th>Last Found Chapter</th>
+      {% endif %}
+      <th>Last Updated</th>
+      <th></th>
+    </thead>
+    {% for url, data in rows.items() %}
+    <tr class="{% if data.favorite %}favorite-row{% endif %}">
+      <td>
+        <div class="table-tooltip">
+          <a href="{{ url }}" target="_blank" class="domain-tooltip">
+            {{ data.name }}
+          </a>
+          <span class="tooltiptext"></span>
+        </div>
+      </td>
+      <td>{{ data.last_saved }}</td>
+      {% if show_found_column %}
+      <td style="font-weight: 600;">
+        {{ data.last_found }}
+      </td>
+      {% endif %}
+      <td style="white-space: nowrap; width: 0; text-align: center;">
+        <span class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}">
+          {{ data.timestamp_display }}
+          {% if data.timestamp_display != data.timestamp %}
+          <span class="timestamp-tooltiptext">{{ data.timestamp }}</span>
+          {% endif %}
+          {% if data.last_error %}
+          <span class="tooltiptext error-tooltiptext">{{ data.last_error }}</span>
+          {% endif %}
+        </span>
+      </td>
+      <td style="white-space: nowrap; width: 0">
+        {% if show_save_button %}
+        <div class="table-tooltip">
+          <button onclick="updateChapter('{{ url }}')">
+            <i class="fas fa-save"></i>
+          </button>
+          <span class="tooltiptext">Save</span>
+        </div>
+        {% endif %}
+        <div
+          class="menu-container"
+          data-url="{{ url }}"
+          data-name="{{ data.name }}"
+          data-update-frequency="{{ data.update_frequency }}"
+          data-free-only="{{ 'true' if data.free_only else 'false' }}"
+          data-supports-free="{{ 'true' if data.supports_free_toggle else 'false' }}"
+          data-favorite="{{ 'true' if data.favorite else 'false' }}"
+        >
+          <button
+            class="menu-toggle"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            <i class="fas fa-ellipsis-h"></i>
+          </button>
+
+          <div class="menu-actions" aria-hidden="true">
+            <div class="table-tooltip">
+              <button class="edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <span class="tooltiptext">Edit</span>
+            </div>
+            <div class="table-tooltip">
+              <button class="favorite{% if data.favorite %} favorited{% endif %}">
+                <i class="{% if data.favorite %}fas{% else %}far{% endif %} fa-star"></i>
+              </button>
+              <span class="tooltiptext">Favorite</span>
+            </div>
+            <div class="table-tooltip">
+              <button class="recheck">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+              <span class="tooltiptext">Recheck</span>
+            </div>
+            <div class="table-tooltip">
+              <button class="history">
+                <i class="fas fa-history"></i>
+              </button>
+              <span class="tooltiptext">History</span>
+            </div>
+            <div class="table-tooltip">
+              <button class="danger">
+                <i class="fas fa-trash"></i>
+              </button>
+              <span class="tooltiptext">Delete</span>
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{%- endmacro %}

@@ -176,16 +176,14 @@ def schedule_updates():
         )
     scheduler.start()
     
-# --------------------- View Logic ---------------------
-def index(category=None):
-    update_type = resolve_category(category)
+def build_view_data(update_type):
     previous_data = annotate_support_flags(db.get_scraped_data(update_type))
     previous_data = annotate_timestamp_display(previous_data)
 
     differences = {url: data for url, data in previous_data.items() if data["last_found"] != data["last_saved"]}
     same_data = {url: data for url, data in previous_data.items() if data["last_found"] == data["last_saved"]}
 
-    def sort_entries_by_favorite_then_time(entries):
+    def sort_entries(entries):
         return dict(
             sorted(
                 entries.items(),
@@ -197,19 +195,61 @@ def index(category=None):
             )
         )
 
-    differences = sort_entries_by_favorite_then_time(differences)
-    same_data = sort_entries_by_favorite_then_time(same_data)
-
     category_info = db.get_category(update_type)
     last_checked = category_info["last_checked"] if category_info else None
-    logging.info(f"Last full update ({update_type}): {last_checked}")
+
+    return {
+        "differences": sort_entries(differences),
+        "same_data": sort_entries(same_data),
+        "last_full_update": last_checked,
+    }
+# --------------------- View Logic ---------------------
+def index(category=None):
+    update_type = resolve_category(category)
+    view_data = build_view_data(update_type)
+
+    logging.info(f"Last full update ({update_type}): {view_data['last_full_update']}")
     return render_template(
         "index.html",
-        differences=differences,
-        same_data=same_data,
+        differences=view_data["differences"],
+        same_data=view_data["same_data"],
         update_in_progress=update_in_progress,
-        last_full_update=last_checked,
+        last_full_update=view_data["last_full_update"],
         current_category=update_type,
+    )
+
+
+@app.route("/api/chapters")
+def chapter_data():
+    category = request.args.get("category")
+    update_type = resolve_category(category)
+    view_data = build_view_data(update_type)
+
+    differences_html = (
+        render_template(
+            "partials/chapter_table.html",
+            rows=view_data["differences"],
+            show_found_column=True,
+            show_save_button=True,
+        )
+        if view_data["differences"]
+        else '<div class="status-box status-success"><i class="fas fa-check-circle"></i><span>All chapters are up to date!</span></div>'
+    )
+    same_html = (
+        render_template(
+            "partials/chapter_table.html",
+            rows=view_data["same_data"],
+        )
+        if view_data["same_data"]
+        else '<div class="status-box status-info"><i class="fas fa-info-circle"></i><span>No entries being tracked yet.</span></div>'
+    )
+
+    return jsonify(
+        {
+            "differences": {"count": len(view_data["differences"]), "html": differences_html},
+            "same_data": {"count": len(view_data["same_data"]), "html": same_html},
+            "last_full_update": view_data["last_full_update"],
+        }
     )
 
 def update(category=None):

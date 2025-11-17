@@ -15,6 +15,8 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
       rel="stylesheet"
     />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -64,125 +66,14 @@
     />
     <meta name="theme-color" content="#ffffff" />
   </head>
-  <body data-category="{{ current_category }}">
-    {% macro render_chapter_table(
-      rows,
-      show_found_column=False,
-      show_save_button=False
-    ) -%}
-    <div class="table-wrapper">
-      <table border="1">
-        <thead>
-          <th>Name</th>
-          {% if show_found_column %}
-          <th>Last Saved Chapter</th>
-          {% else %}
-          <th>Last Chapter</th>
-          {% endif %}
-          {% if show_found_column %}
-          <th>Last Found Chapter</th>
-          {% endif %}
-          <th>Last Updated</th>
-          <th></th>
-        </thead>
-        {% for url, data in rows.items() %}
-        <tr class="{% if data.favorite %}favorite-row{% endif %}">
-          <td>
-            <div class="table-tooltip">
-              <a href="{{ url }}" target="_blank" class="domain-tooltip">
-                {{ data.name }}
-              </a>
-              <span class="tooltiptext"></span>
-            </div>
-          </td>
-          <td>{{ data.last_saved }}</td>
-          {% if show_found_column %}
-          <td style="font-weight: 600;">
-            {{ data.last_found }}
-          </td>
-          {% endif %}
-          <td style="white-space: nowrap; width: 0; text-align: center;">
-            <span class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}">
-              {{ data.timestamp_display }}
-              {% if data.timestamp_display != data.timestamp %}
-              <span class="timestamp-tooltiptext">{{ data.timestamp }}</span>
-              {% endif %}
-              {% if data.last_error %}
-              <span class="tooltiptext error-tooltiptext">{{ data.last_error }}</span>
-              {% endif %}
-            </span>
-          </td>
-          <td style="white-space: nowrap; width: 0">
-            {% if show_save_button %}
-            <div class="table-tooltip">
-              <button onclick="updateChapter('{{ url }}')">
-                <i class="fas fa-save"></i>
-              </button>
-              <span class="tooltiptext">Save</span>
-            </div>
-            {% endif %}
-            <div
-              class="menu-container"
-              data-url="{{ url }}"
-              data-name="{{ data.name }}"
-              data-update-frequency="{{ data.update_frequency }}"
-              data-free-only="{{ 'true' if data.free_only else 'false' }}"
-              data-supports-free="{{ 'true' if data.supports_free_toggle else 'false' }}"
-              data-favorite="{{ 'true' if data.favorite else 'false' }}"
-            >
-              <button
-                class="menu-toggle"
-                aria-haspopup="true"
-                aria-expanded="false"
-              >
-                <i class="fas fa-ellipsis-h"></i>
-              </button>
-
-              <div class="menu-actions" aria-hidden="true">
-                <div class="table-tooltip">
-                  <button class="edit">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <span class="tooltiptext">Edit</span>
-                </div>
-                <div class="table-tooltip">
-                  <button class="favorite{% if data.favorite %} favorited{% endif %}">
-                    <i class="{% if data.favorite %}fas{% else %}far{% endif %} fa-star"></i>
-                  </button>
-                  <span class="tooltiptext">Favorite</span>
-                </div>
-                <div class="table-tooltip">
-                  <button class="recheck">
-                    <i class="fas fa-sync-alt"></i>
-                  </button>
-                  <span class="tooltiptext">Recheck</span>
-                </div>
-                <div class="table-tooltip">
-                  <button class="history">
-                    <i class="fas fa-history"></i>
-                  </button>
-                  <span class="tooltiptext">History</span>
-                </div>
-                <div class="table-tooltip">
-                  <button class="danger">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                  <span class="tooltiptext">Delete</span>
-                </div>
-              </div>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </table>
-    </div>
-    {%- endmacro %}
+  <body data-category="{{ current_category }}" data-last-update="{{ last_full_update }}">
+    {% from "macros/chapter_table.html" import render_chapter_table %}
     <div class="container">
       <h1>New Chapter Tracker</h1>
 
-        <div class="table-header">
+        <div class="table-header" id="newChaptersHeader">
           <h2 class="toggle" data-section="new" onclick="toggleSection(this)">
-          New Chapters <span class="badge">{{ differences|length }}</span>
+          New Chapters <span class="badge" id="newChaptersBadge">{{ differences|length }}</span>
         </h2>
         <div class="full-update-tooltip">
           <button onclick="forceUpdate()">
@@ -194,7 +85,7 @@
         </div>
       </div>
 
-      <div class="collapsible-content">
+      <div class="collapsible-content" id="newChaptersContent">
         {% if differences %}
         {{ render_chapter_table(
           differences,
@@ -209,13 +100,13 @@
         {% endif %}
       </div>
 
-      <div class="table-header">
+      <div class="table-header" id="sameChaptersHeader">
         <h2 class="toggle collapsed" data-section="same" onclick="toggleSection(this)">
-          No New Chapters <span class="badge">{{ same_data|length }}</span>
+          No New Chapters <span class="badge" id="sameChaptersBadge">{{ same_data|length }}</span>
         </h2>
       </div>
 
-      <div class="collapsible-content collapsed">
+      <div class="collapsible-content collapsed" id="sameChaptersContent">
         {% if same_data %}
         {{ render_chapter_table(
           same_data,
@@ -305,50 +196,5 @@
       </div>
     </div>
 
-    <script>
-      var retainValue = function (value) {
-        if (value > 9) {
-          return Math.floor(value);
-        } else {
-          return Math.floor(value * 10) / 10;
-        }
-      };
-
-      document.addEventListener("DOMContentLoaded", function () {
-        var lastUpdate = "{{ last_full_update }}";
-        if (lastUpdate) {
-          moment.relativeTimeRounding(Math.floor);
-          //moment.relativeTimeRounding(retainValue);
-          moment.relativeTimeThreshold("s", 60);
-          moment.relativeTimeThreshold("m", 60);
-          moment.relativeTimeThreshold("h", 24);
-          moment.relativeTimeThreshold("d", 31);
-          moment.relativeTimeThreshold("M", 12);
-          var relativeTime = moment(lastUpdate).fromNow();
-          if (relativeTime === "Invalid date") {
-            relativeTime = "Never";
-          }
-          document.getElementById("lastUpdateTooltip").textContent =
-            relativeTime;
-        }
-        document.querySelectorAll(".domain-tooltip").forEach((link) => {
-          try {
-            const urlObj = new URL(link.href);
-            let hostname = urlObj.hostname;
-
-            // Strip "www." if present
-            if (hostname.startsWith("www.")) {
-              hostname = hostname.slice(4);
-            }
-
-            link.parentElement.querySelector(".tooltiptext").textContent =
-              hostname;
-          } catch (e) {
-            link.parentElement.querySelector(".tooltiptext").textContent =
-              "Invalid URL";
-          }
-        });
-      });
-    </script>
   </body>
 </html>

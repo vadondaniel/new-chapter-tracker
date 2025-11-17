@@ -55,8 +55,11 @@ socket.on("update_complete", function (data) {
   if (targetCategory !== getCurrentCategory()) {
     return;
   }
-  hideSpinner();
-  location.reload();
+  refreshChapterTables()
+    .catch((error) =>
+      console.error("Error refreshing chapters after scheduled update:", error)
+    )
+    .finally(() => hideSpinner());
 });
 
 // ===== AJAX functions =====
@@ -69,12 +72,11 @@ function updateChapter(url) {
     body: JSON.stringify({ url: url, timestamp: new Date().toISOString() }),
   })
     .then((response) => response.json())
-    .then((data) => hideSpinner())
-    .then(() => location.reload())
+    .then(() => refreshChapterTables())
     .catch((error) => {
       console.error("Error updating chapter:", error);
-      hideSpinner();
-    });
+    })
+    .finally(() => hideSpinner());
 }
 
 function recheckChapter(url) {
@@ -86,12 +88,11 @@ function recheckChapter(url) {
     body: JSON.stringify({ url: url }),
   })
     .then((response) => response.json())
-    .then((data) => hideSpinner())
-    .then(() => location.reload())
+    .then(() => refreshChapterTables())
     .catch((error) => {
       console.error("Error rechecking chapter:", error);
-      hideSpinner();
-    });
+    })
+    .finally(() => hideSpinner());
 }
 
 function addLink() {
@@ -99,6 +100,7 @@ function addLink() {
   const url = document.getElementById("newUrl").value;
   if (!name || !url) return alert("Please enter both name and URL.");
 
+  showSpinner("Adding link...");
   const path = actionPath("add");
   fetch(path, {
     method: "POST",
@@ -106,8 +108,9 @@ function addLink() {
     body: JSON.stringify({ name, url }),
   })
     .then((response) => response.json())
-    .then(() => location.reload())
-    .catch((error) => console.error("Error adding link:", error));
+    .then(() => refreshChapterTables())
+    .catch((error) => console.error("Error adding link:", error))
+    .finally(() => hideSpinner());
 }
 
 function removeLink() {
@@ -123,7 +126,9 @@ function removeLink() {
     .then((response) => response.json())
     .then((data) =>
       data.status === "success"
-        ? location.reload()
+        ? refreshChapterTables().catch((err) =>
+            console.error("Error refreshing chapters after removal:", err)
+          )
         : alert("Failed to remove link.")
     );
 }
@@ -138,7 +143,10 @@ function removeLinkByUrl(url) {
   })
     .then((r) => r.json())
     .then((data) => {
-      if (data.status === "success") location.reload();
+      if (data.status === "success")
+        refreshChapterTables().catch((err) =>
+          console.error("Error refreshing chapters after removal:", err)
+        );
       else alert("Failed to remove link.");
     })
     .catch((err) => {
@@ -159,12 +167,11 @@ function toggleFavorite(url, container) {
     body: JSON.stringify({ url, favorite: !isFavorite }),
   })
     .then((response) => response.json())
-    .then(() => hideSpinner())
-    .then(() => location.reload())
+    .then(() => refreshChapterTables())
     .catch((error) => {
       console.error("Error toggling favorite:", error);
-      hideSpinner();
-    });
+    })
+    .finally(() => hideSpinner());
 }
 
 function formatDateTime(value) {
@@ -178,6 +185,271 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function configureRelativeTime() {
+  moment.relativeTimeRounding(Math.floor);
+  moment.relativeTimeThreshold("s", 60);
+  moment.relativeTimeThreshold("m", 60);
+  moment.relativeTimeThreshold("h", 24);
+  moment.relativeTimeThreshold("d", 31);
+  moment.relativeTimeThreshold("M", 12);
+}
+
+function updateLastUpdateTooltip(value) {
+  const tooltip = document.getElementById("lastUpdateTooltip");
+  if (!tooltip) return;
+  if (!value) {
+    tooltip.textContent = "Never";
+    return;
+  }
+  const relativeTime = moment(value).fromNow();
+  tooltip.textContent = relativeTime === "Invalid date" ? "Never" : relativeTime;
+}
+
+function setupDomainTooltips(root = document) {
+  if (!root) return;
+  root.querySelectorAll(".domain-tooltip").forEach((link) => {
+    try {
+      const urlObj = new URL(link.href);
+      let hostname = urlObj.hostname;
+      if (hostname.startsWith("www.")) hostname = hostname.slice(4);
+      link.parentElement.querySelector(".tooltiptext").textContent = hostname;
+    } catch (e) {
+      link.parentElement.querySelector(".tooltiptext").textContent = "Invalid URL";
+    }
+  });
+}
+
+function setupFloatingTooltips(root = document) {
+  if (!root) return;
+  root.querySelectorAll(".table-tooltip").forEach((trigger) => {
+    if (trigger.dataset.floatingTooltipInitialized === "true") return;
+    const tip = trigger.querySelector(".tooltiptext");
+    if (!tip) return;
+    trigger.dataset.floatingTooltipInitialized = "true";
+    let floating = null;
+
+    const showFloating = () => {
+      floating = tip.cloneNode(true);
+      floating.classList.add("floating");
+      floating.style.position = "absolute";
+      floating.style.visibility = "hidden";
+      document.body.appendChild(floating);
+
+      trigger.classList.add("has-floating");
+
+      const rect = trigger.getBoundingClientRect();
+      const fRect = floating.getBoundingClientRect();
+      const gap = 6;
+      let top = rect.top + window.scrollY - fRect.height - gap;
+      let left = rect.left + window.scrollX + rect.width / 2 - fRect.width / 2;
+
+      const pad = 8;
+      const maxLeft =
+        window.scrollX +
+        document.documentElement.clientWidth -
+        fRect.width -
+        pad;
+      left = Math.max(window.scrollX + pad, Math.min(left, maxLeft));
+
+      if (top < window.scrollY + pad) {
+        top = rect.bottom + window.scrollY + gap;
+      }
+
+      floating.style.top = `${top}px`;
+      floating.style.left = `${left}px`;
+      floating.style.visibility = "visible";
+    };
+
+    const hideFloating = () => {
+      if (floating) {
+        floating.remove();
+        floating = null;
+        trigger.classList.remove("has-floating");
+      }
+    };
+
+    trigger.addEventListener("mouseenter", showFloating);
+    trigger.addEventListener("mouseleave", hideFloating);
+    trigger.addEventListener("focusin", showFloating);
+    trigger.addEventListener("focusout", hideFloating);
+    window.addEventListener("scroll", hideFloating, { passive: true });
+    window.addEventListener("resize", hideFloating);
+  });
+}
+
+const attachErrorTooltip = (trigger) => {
+  const tip = trigger.querySelector(".tooltiptext.error-tooltiptext");
+  if (!tip) return;
+
+  const floating = tip.cloneNode(true);
+  floating.classList.remove("tooltiptext");
+  floating.classList.add("floating-error-tooltip");
+  floating.style.position = "absolute";
+  document.body.appendChild(floating);
+
+  const positionFloating = () => {
+    const rect = trigger.getBoundingClientRect();
+    const fRect = floating.getBoundingClientRect();
+    const gap = 6;
+    let top = rect.top + window.scrollY - fRect.height - gap;
+    let left = rect.left + window.scrollX + rect.width / 2 - fRect.width / 2;
+    const pad = 8;
+    const maxLeft =
+      window.scrollX +
+      document.documentElement.clientWidth -
+      fRect.width -
+      pad;
+    left = Math.max(window.scrollX + pad, Math.min(left, maxLeft));
+
+    if (top < window.scrollY + pad) {
+      top = rect.bottom + window.scrollY + gap;
+    }
+
+    floating.style.top = `${top}px`;
+    floating.style.left = `${left}px`;
+  };
+
+  const showFloating = () => {
+    positionFloating();
+    floating.style.visibility = "visible";
+    floating.style.opacity = "1";
+  };
+
+  const hideFloating = () => {
+    floating.style.visibility = "hidden";
+    floating.style.opacity = "0";
+  };
+
+  trigger.addEventListener("mouseenter", showFloating);
+  trigger.addEventListener("mouseleave", hideFloating);
+  trigger.addEventListener("focusin", showFloating);
+  trigger.addEventListener("focusout", hideFloating);
+  window.addEventListener("scroll", hideFloating, { passive: true });
+  window.addEventListener("resize", () => {
+    positionFloating();
+    hideFloating();
+  });
+};
+
+function attachErrorTooltips(root = document) {
+  if (!root) return;
+  root
+    .querySelectorAll(".tooltip.timestamp-text.error-timestamp")
+    .forEach(attachErrorTooltip);
+}
+
+function attachMenuToggle(toggle) {
+  if (toggle.dataset.menuInitialized === "true") {
+    return;
+  }
+  toggle.dataset.menuInitialized = "true";
+  toggle.addEventListener("click", function (e) {
+    e.stopPropagation();
+
+    document.querySelectorAll(".menu-actions.active").forEach((m) => m.remove());
+
+    const container = this.closest(".menu-container");
+    const url = container.dataset.url;
+    const menu = container.querySelector(".menu-actions");
+
+    const clone = menu.cloneNode(true);
+    clone.classList.add("active");
+    clone.style.position = "absolute";
+    clone.style.visibility = "hidden";
+    document.body.appendChild(clone);
+
+    const rect = this.getBoundingClientRect();
+    const cloneRect = clone.getBoundingClientRect();
+    const top = rect.top + window.scrollY - cloneRect.height;
+    const left =
+      rect.left + window.scrollX + rect.width / 2 - cloneRect.width / 2;
+    clone.style.top = `${top}px`;
+    clone.style.left = `${left}px`;
+    clone.style.visibility = "visible";
+
+    const editBtn = clone.querySelector("button.edit");
+    const favoriteBtn = clone.querySelector("button.favorite");
+    const recheckBtn = clone.querySelector("button.recheck");
+    const historyBtn = clone.querySelector("button.history");
+    const deleteBtn = clone.querySelector("button.danger");
+
+    if (editBtn)
+      editBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        editChapter(url);
+        clone.remove();
+      });
+    if (recheckBtn)
+      recheckBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        recheckChapter(url);
+        clone.remove();
+      });
+    if (favoriteBtn)
+      favoriteBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        toggleFavorite(url, container);
+        clone.remove();
+      });
+    if (historyBtn)
+      historyBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const supportsFree = container.dataset.supportsFree === "true";
+        viewHistory(url, supportsFree);
+        clone.remove();
+      });
+    if (deleteBtn)
+      deleteBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        removeLinkByUrl(url);
+        clone.remove();
+      });
+
+    const closeMenu = () => {
+      clone.remove();
+      document.removeEventListener("click", closeMenu);
+    };
+    setTimeout(() => document.addEventListener("click", closeMenu), 0);
+
+    clone.addEventListener("mouseleave", () => clone.remove());
+  });
+}
+
+function initRowEnhancements(root = document) {
+  if (!root) return;
+  setupDomainTooltips(root);
+  setupFloatingTooltips(root);
+  attachErrorTooltips(root);
+  root.querySelectorAll(".menu-toggle").forEach((toggle) => attachMenuToggle(toggle));
+}
+
+async function refreshChapterTables() {
+  const category = getCurrentCategory();
+  const response = await fetch(
+    `/api/chapters?category=${encodeURIComponent(category)}`
+  );
+  if (!response.ok) {
+    throw new Error("Unable to refresh chapters");
+  }
+  const payload = await response.json();
+  const newBadge = document.getElementById("newChaptersBadge");
+  const newContent = document.getElementById("newChaptersContent");
+  const sameBadge = document.getElementById("sameChaptersBadge");
+  const sameContent = document.getElementById("sameChaptersContent");
+  if (newBadge) newBadge.textContent = payload.differences.count;
+  if (newContent) {
+    newContent.innerHTML = payload.differences.html;
+    initRowEnhancements(newContent);
+  }
+  if (sameBadge) sameBadge.textContent = payload.same_data.count;
+  if (sameContent) {
+    sameContent.innerHTML = payload.same_data.html;
+    initRowEnhancements(sameContent);
+  }
+  updateLastUpdateTooltip(payload.last_full_update);
+  return payload;
 }
 
 function hideHistoryModal() {
@@ -344,18 +616,9 @@ function toggleSection(header) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  // show hostname in tooltip (existing)
-  document.querySelectorAll(".domain-tooltip").forEach((link) => {
-    try {
-      const urlObj = new URL(link.href);
-      let hostname = urlObj.hostname;
-      if (hostname.startsWith("www.")) hostname = hostname.slice(4);
-      link.parentElement.querySelector(".tooltiptext").textContent = hostname;
-    } catch (e) {
-      link.parentElement.querySelector(".tooltiptext").textContent =
-        "Invalid URL";
-    }
-  });
+  configureRelativeTime();
+  const initialLastUpdate = document.body?.dataset.lastUpdate || null;
+  updateLastUpdateTooltip(initialLastUpdate);
 
   const savedSectionStates = readSectionStates();
   document.querySelectorAll(".table-header h2.toggle").forEach((header) => {
@@ -369,126 +632,7 @@ document.addEventListener("DOMContentLoaded", function () {
     content.classList.toggle("collapsed", shouldCollapse);
   });
 
-  // --- NEW: floating tooltips for .table-tooltip to avoid clipping by table wrapper ---
-  document.querySelectorAll(".table-tooltip").forEach((trigger) => {
-    const tip = trigger.querySelector(".tooltiptext");
-    if (!tip) return;
-    let floating = null;
-
-    const showFloating = () => {
-      // clone and append to body
-      floating = tip.cloneNode(true);
-      floating.classList.add("floating");
-      floating.style.position = "absolute";
-      floating.style.visibility = "hidden";
-      document.body.appendChild(floating);
-
-      // mark trigger so original tooltip is suppressed via CSS
-      trigger.classList.add("has-floating");
-
-      // measure
-      const rect = trigger.getBoundingClientRect();
-      const fRect = floating.getBoundingClientRect();
-
-      // try place above centered
-      const gap = 6;
-      let top = rect.top + window.scrollY - fRect.height - gap;
-      let left = rect.left + window.scrollX + rect.width / 2 - fRect.width / 2;
-
-      // clamp horizontally to viewport with small padding
-      const pad = 8;
-      const maxLeft =
-        window.scrollX +
-        document.documentElement.clientWidth -
-        fRect.width -
-        pad;
-      left = Math.max(window.scrollX + pad, Math.min(left, maxLeft));
-
-      // if not enough space above, place below
-      if (top < window.scrollY + pad) {
-        top = rect.bottom + window.scrollY + gap;
-      }
-
-      floating.style.top = `${top}px`;
-      floating.style.left = `${left}px`;
-      floating.style.visibility = "visible";
-    };
-
-    const hideFloating = () => {
-      if (floating) {
-        floating.remove();
-        floating = null;
-        // restore original tooltip visibility
-        trigger.classList.remove("has-floating");
-      }
-    };
-
-    trigger.addEventListener("mouseenter", showFloating);
-    trigger.addEventListener("mouseleave", hideFloating);
-    trigger.addEventListener("focusin", showFloating);
-    trigger.addEventListener("focusout", hideFloating);
-    // remove on resize/scroll to avoid stuck elements
-    window.addEventListener("scroll", hideFloating, { passive: true });
-    window.addEventListener("resize", hideFloating);
-  });
-
-  const attachErrorTooltip = (trigger) => {
-    const tip = trigger.querySelector(".tooltiptext.error-tooltiptext");
-    if (!tip) return;
-
-    const floating = tip.cloneNode(true);
-    floating.classList.remove("tooltiptext");
-    floating.classList.add("floating-error-tooltip");
-    floating.style.position = "absolute";
-    document.body.appendChild(floating);
-
-    const positionFloating = () => {
-      const rect = trigger.getBoundingClientRect();
-      const fRect = floating.getBoundingClientRect();
-      const gap = 6;
-      let top = rect.top + window.scrollY - fRect.height - gap;
-      let left = rect.left + window.scrollX + rect.width / 2 - fRect.width / 2;
-      const pad = 8;
-      const maxLeft =
-        window.scrollX +
-        document.documentElement.clientWidth -
-        fRect.width -
-        pad;
-      left = Math.max(window.scrollX + pad, Math.min(left, maxLeft));
-
-      if (top < window.scrollY + pad) {
-        top = rect.bottom + window.scrollY + gap;
-      }
-
-      floating.style.top = `${top}px`;
-      floating.style.left = `${left}px`;
-    };
-
-    const showFloating = () => {
-      positionFloating();
-      floating.style.visibility = "visible";
-      floating.style.opacity = "1";
-    };
-
-    const hideFloating = () => {
-      floating.style.visibility = "hidden";
-      floating.style.opacity = "0";
-    };
-
-    trigger.addEventListener("mouseenter", showFloating);
-    trigger.addEventListener("mouseleave", hideFloating);
-    trigger.addEventListener("focusin", showFloating);
-    trigger.addEventListener("focusout", hideFloating);
-    window.addEventListener("scroll", hideFloating, { passive: true });
-    window.addEventListener("resize", () => {
-      positionFloating();
-      hideFloating();
-    });
-  };
-
-  document
-    .querySelectorAll(".tooltip.timestamp-text.error-timestamp")
-    .forEach(attachErrorTooltip);
+  initRowEnhancements(document);
 
   // ===== Keep-floating-tooltips-clean =====
   // remove all floating clones and restore originals
@@ -544,87 +688,6 @@ document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener("beforeunload", hideAllFloatingTooltips);
     window.addEventListener("blur", hideAllFloatingTooltips);
   })();
-
-  document.querySelectorAll(".menu-toggle").forEach((toggle) => {
-    toggle.addEventListener("click", function (e) {
-      e.stopPropagation();
-
-      // remove existing menus
-      document
-        .querySelectorAll(".menu-actions.active")
-        .forEach((m) => m.remove());
-
-      const container = this.closest(".menu-container");
-      const url = container.dataset.url; // grab the url from original container
-      const menu = container.querySelector(".menu-actions");
-
-      // clone menu
-      const clone = menu.cloneNode(true);
-      clone.classList.add("active");
-      clone.style.position = "absolute";
-      clone.style.visibility = "hidden"; // hide while measuring
-      document.body.appendChild(clone);
-
-      // measure & position
-      const rect = this.getBoundingClientRect();
-      const cloneRect = clone.getBoundingClientRect();
-      const top = rect.top + window.scrollY - cloneRect.height;
-      const left =
-        rect.left + window.scrollX + rect.width / 2 - cloneRect.width / 2;
-      clone.style.top = `${top}px`;
-      clone.style.left = `${left}px`;
-      clone.style.visibility = "visible";
-
-      // attach button handlers using the url from the original container
-      const editBtn = clone.querySelector("button.edit");
-      const favoriteBtn = clone.querySelector("button.favorite");
-      const recheckBtn = clone.querySelector("button.recheck");
-      const historyBtn = clone.querySelector("button.history");
-      const deleteBtn = clone.querySelector("button.danger");
-
-      if (editBtn)
-        editBtn.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          editChapter(url);
-          clone.remove();
-        });
-      if (recheckBtn)
-        recheckBtn.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          recheckChapter(url);
-          clone.remove();
-        });
-      if (favoriteBtn)
-        favoriteBtn.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          toggleFavorite(url, container);
-          clone.remove();
-        });
-      const supportsFree = container.dataset.supportsFree === "true";
-      if (historyBtn)
-        historyBtn.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          viewHistory(url, supportsFree);
-          clone.remove();
-        });
-      if (deleteBtn)
-        deleteBtn.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          removeLinkByUrl(url);
-          clone.remove();
-        });
-
-      // close on outside click
-      const closeMenu = () => {
-        clone.remove();
-        document.removeEventListener("click", closeMenu);
-      };
-      setTimeout(() => document.addEventListener("click", closeMenu), 0);
-
-      // close on mouseleave
-      clone.addEventListener("mouseleave", () => clone.remove());
-    });
-  });
 });
 
 // Floating add modal logic
@@ -714,7 +777,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await res.json();
       if (data.status === "success") {
         closeAddModal();
-        location.reload();
+        refreshChapterTables().catch((error) =>
+          console.error("Error refreshing chapters after add/edit:", error)
+        );
       } else {
         alert(isEdit ? "Failed to edit link." : "Failed to add link.");
       }
