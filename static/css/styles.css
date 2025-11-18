@@ -127,7 +127,7 @@
     --danger-color-dark: #dc2626;
 
     /* Tooltip tokens */
-    --tooltip-bg: rgba(15, 23, 42, 0.92);
+    --tooltip-bg: rgba(5, 10, 15, 0.92);
     --tooltip-color: #fff;
     --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 
