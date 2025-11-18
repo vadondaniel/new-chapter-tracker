@@ -783,6 +783,23 @@ body.backdrop-blur .modal-backdrop {
   position: relative;
 }
 
+.modal-field-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.modal-field-row .modal-field {
+  flex: 1 1 180px;
+  min-width: 160px;
+  margin-bottom: 0;
+}
+.modal-checkbox.inline,
+.modal-checkbox-inline {
+  margin-top: 0;
+  align-items: center;
+}
+
 .modal-checkbox input[type="checkbox"] {
   position: absolute;
   opacity: 0;

@@ -169,34 +169,36 @@
         <div class="modal-body">
           <input id="modalName" type="text" placeholder="Name" />
           <input id="modalUrl" type="text" placeholder="URL" />
-          <label class="modal-field">
-            <input
-              id="modalFrequency"
-              type="number"
-              min="1"
-              step="1"
-              placeholder="Update frequency (days)"
-            />
-          <span class="modal-info tooltip" aria-hidden="true">
-            <i class="fas fa-info-circle"></i>
-            <span class="tooltiptext info-tooltiptext">
-              Using a longer update frequency reduces scrape pressure on the
-              source and can help avoid rate limits; shorter intervals keep you
-              closer to new chapters. Manual updates always fetch whatever’s
-              available, no matter the schedule.
-            </span>
-          </span>
-          </label>
+          <div class="modal-field-row">
+            <label class="modal-field">
+              <input
+                id="modalFrequency"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Update frequency (days)"
+              />
+              <span class="modal-info tooltip" aria-hidden="true">
+                <i class="fas fa-info-circle"></i>
+                <span class="tooltiptext info-tooltiptext">
+                  Using a longer update frequency reduces scrape pressure on the
+                  source and can help avoid rate limits; shorter intervals keep you
+                  closer to new chapters. Manual updates always fetch whatever’s
+                  available, no matter the schedule.
+                </span>
+              </span>
+            </label>
+            <label class="modal-checkbox tooltip modal-checkbox-inline">
+              <input type="checkbox" id="modalFreeOnly" />
+              <span class="custom-checkbox" aria-hidden="true"></span>
+              <span>Restrict to free chapters only</span>
+              <span class="tooltiptext info-tooltiptext">
+                If the website/scraper supports it, you can choose to exclude paid
+                entries/chapters from being found.
+              </span>
+            </label>
+          </div>
         </div>
-        <label class="modal-checkbox tooltip">
-          <input type="checkbox" id="modalFreeOnly" />
-          <span class="custom-checkbox" aria-hidden="true"></span>
-          <span>Restrict to free chapters only</span>
-          <span class="tooltiptext info-tooltiptext">
-            If the website/scraper supports it, you can choose to exclude paid
-            entries/chapters from being found.
-          </span>
-        </label>
         <div class="modal-actions">
           <button id="modalAddBtn"><i class="fas fa-plus"></i> Add</button>
           <button id="modalCancelBtn" class="danger">Cancel</button>
