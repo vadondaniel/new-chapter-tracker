@@ -1162,6 +1162,10 @@ body.backdrop-blur .modal-backdrop {
   background: transparent !important;
 }
 
+.category-table col.category-col-order {
+  width: 70px;
+}
+
 .category-table col.category-col-id {
   width: 24%;
 }
@@ -1176,6 +1180,47 @@ body.backdrop-blur .modal-backdrop {
 }
 .category-table col.category-col-actions {
   width: 110px;
+}
+
+.category-table__reorder {
+  text-align: center;
+}
+
+.category-reorder-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-move-btn {
+  width: 34px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-bg);
+  color: var(--muted-strong);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.category-move-btn:hover:not(:disabled) {
+  background: var(--hover-overlay);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.category-move-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.category-reorder-disabled {
+  opacity: 0.65;
 }
 
 .category-table td input[type="text"],
@@ -1197,7 +1242,6 @@ body.backdrop-blur .modal-backdrop {
 }
 
 .category-table__toggle {
-  display: flex;
   justify-content: center;
   align-items: center;
   min-height: 40px;

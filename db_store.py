@@ -116,6 +116,8 @@ class ChapterDatabase:
             conn.execute(
                 "ALTER TABLE categories ADD COLUMN include_in_nav INTEGER NOT NULL DEFAULT 1"
             )
+        if "sort_order" not in columns:
+            conn.execute("ALTER TABLE categories ADD COLUMN sort_order INTEGER")
         rows = conn.execute("SELECT name, display_name FROM categories").fetchall()
         for row in rows:
             current = (row["display_name"] or "").strip()
@@ -133,6 +135,34 @@ class ChapterDatabase:
             WHERE include_in_nav IS NULL
             """
         )
+        self._ensure_category_sort_orders(conn)
+
+    def _ensure_category_sort_orders(self, conn):
+        rows = conn.execute(
+            """
+            SELECT name, sort_order
+            FROM categories
+            ORDER BY sort_order IS NULL,
+                     sort_order,
+                     CASE WHEN name = 'main' THEN 0 ELSE 1 END,
+                     name
+            """
+        ).fetchall()
+        needs_update = any(row["sort_order"] is None for row in rows)
+        if not needs_update:
+            return
+        for index, row in enumerate(rows):
+            conn.execute(
+                "UPDATE categories SET sort_order = ? WHERE name = ?",
+                (index, row["name"]),
+            )
+
+    def _get_next_sort_value(self, conn) -> int:
+        row = conn.execute(
+            "SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM categories"
+        ).fetchone()
+        max_value = row["max_order"] if row and row["max_order"] is not None else -1
+        return max_value + 1
 
     def _seed_categories(self, conn):
         existing = {
@@ -146,10 +176,16 @@ class ChapterDatabase:
                         name,
                         update_interval_hours,
                         display_name,
-                        include_in_nav
-                    ) VALUES (?, ?, ?, 1)
+                        include_in_nav,
+                        sort_order
+                    ) VALUES (?, ?, ?, 1, ?)
                     """,
-                    (name, hours, self._default_display_name(name)),
+                    (
+                        name,
+                        hours,
+                        self._default_display_name(name),
+                        self._get_next_sort_value(conn),
+                    ),
                 )
 
     def _ensure_links_columns(self, conn):
@@ -542,9 +578,12 @@ class ChapterDatabase:
                        update_interval_hours,
                        last_checked,
                        display_name,
-                       include_in_nav
+                       include_in_nav,
+                       sort_order
                 FROM categories
-                ORDER BY CASE name WHEN 'main' THEN 0 ELSE 1 END, name
+                ORDER BY sort_order ASC,
+                         CASE name WHEN 'main' THEN 0 ELSE 1 END,
+                         name
                 """
             ).fetchall()
         return [
@@ -554,6 +593,7 @@ class ChapterDatabase:
                 "last_checked": row["last_checked"],
                 "display_name": row["display_name"] or self._default_display_name(row["name"]),
                 "include_in_nav": bool(row["include_in_nav"]),
+                "sort_order": row["sort_order"],
             }
             for row in rows
         ]
@@ -635,10 +675,16 @@ class ChapterDatabase:
         with self._connect() as conn:
             conn.execute(
                 """
-                INSERT INTO categories (name, update_interval_hours, display_name, include_in_nav)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO categories (name, update_interval_hours, display_name, include_in_nav, sort_order)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (normalized, interval, display, self._to_flag(include_in_nav)),
+                (
+                  normalized,
+                  interval,
+                  display,
+                  self._to_flag(include_in_nav),
+                  self._get_next_sort_value(conn),
+                ),
             )
         return self.get_category(normalized) or {}
 
@@ -697,3 +743,31 @@ class ChapterDatabase:
                 (normalized,),
             )
         return result.rowcount > 0
+
+    def reorder_categories(self, ordered_names: List[str]) -> List[Dict[str, Any]]:
+        current = self.get_categories()
+        existing_names = [cat["name"] for cat in current]
+        existing_set = set(existing_names)
+        order_map: Dict[str, int] = {}
+        index = 0
+        for name in ordered_names:
+            normalized = self._normalize_category(name)
+            if (
+                not normalized
+                or normalized not in existing_set
+                or normalized in order_map
+            ):
+                continue
+            order_map[normalized] = index
+            index += 1
+        for name in existing_names:
+            if name not in order_map:
+                order_map[name] = index
+                index += 1
+        with self._connect() as conn:
+            for name, position in order_map.items():
+                conn.execute(
+                    "UPDATE categories SET sort_order = ? WHERE name = ?",
+                    (position, name),
+                )
+        return self.get_categories()

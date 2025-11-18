@@ -8,6 +8,7 @@ let categoryData = Array.isArray(window.initialCategoryData)
 const DEFAULT_THEME = "auto";
 const DEFAULT_ACCENT = "emerald";
 let activeModalCount = 0;
+let categoryReorderQueue = Promise.resolve();
 
 function updateBodyModalState(delta) {
   activeModalCount = Math.max(0, activeModalCount + delta);
@@ -636,6 +637,97 @@ function renderCategoryManagerList() {
   categoryData.forEach((cat) =>
     container.appendChild(buildCategoryRow(cat, false))
   );
+  updateCategoryReorderControls();
+}
+
+function getExistingCategoryRows() {
+  const container = document.getElementById("categoryManagerList");
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(".category-table__row")).filter(
+    (row) => row.dataset.mode !== "new"
+  );
+}
+
+function updateCategoryReorderControls() {
+  const rows = getExistingCategoryRows();
+  rows.forEach((row, index) => {
+    const upBtn = row.querySelector(".category-move-btn.up");
+    const downBtn = row.querySelector(".category-move-btn.down");
+    if (upBtn) upBtn.disabled = index === 0;
+    if (downBtn) downBtn.disabled = index === rows.length - 1;
+  });
+  const container = document.getElementById("categoryManagerList");
+  if (!container) return;
+  container
+    .querySelectorAll('.category-table__row[data-mode="new"] .category-move-btn')
+    .forEach((btn) => {
+      btn.disabled = true;
+    });
+}
+
+function buildCategoryOrderPayload() {
+  return getExistingCategoryRows()
+    .map((row) => (row.dataset.originalName || "").trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function enqueueCategoryReorder(order) {
+  if (!Array.isArray(order) || order.length < 2) {
+    return;
+  }
+  categoryReorderQueue = categoryReorderQueue
+    .catch(() => {})
+    .then(() => persistCategoryOrder(order));
+}
+
+async function persistCategoryOrder(order) {
+  if (!Array.isArray(order) || order.length < 2) {
+    return;
+  }
+  try {
+    const res = await fetch("/api/categories/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.status !== "success") {
+      throw new Error(data.error || "Unable to reorder categories");
+    }
+    if (Array.isArray(data.categories)) {
+      categoryData = data.categories;
+      renderCategoryNav(categoryData);
+      setPrefixesFromCategories(categoryData);
+    }
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Unable to reorder categories.");
+  } finally {
+    updateCategoryReorderControls();
+  }
+}
+
+function moveCategoryRow(row, direction) {
+  if (!row || row.dataset.mode === "new") return;
+  const container = document.getElementById("categoryManagerList");
+  if (!container) return;
+  const rows = getExistingCategoryRows();
+  const currentIndex = rows.indexOf(row);
+  if (currentIndex === -1) return;
+  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= rows.length) return;
+  const targetRow = rows[targetIndex];
+  if (direction === "up") {
+    container.insertBefore(row, targetRow);
+  } else {
+    container.insertBefore(
+      row,
+      targetRow.nextElementSibling ? targetRow.nextElementSibling : null
+    );
+  }
+  updateCategoryReorderControls();
+  const order = buildCategoryOrderPayload();
+  enqueueCategoryReorder(order);
 }
 
 function hasRowChanged(row) {
@@ -682,6 +774,30 @@ function buildCategoryRow(cat, isNew) {
   row.dataset.originalInclude = String(
     cat?.include_in_nav === undefined ? true : !!cat.include_in_nav
   );
+  const reorderCell = document.createElement("td");
+  reorderCell.className = "category-table__reorder";
+  const reorderControls = document.createElement("div");
+  reorderControls.className = "category-reorder-controls";
+  const moveUpBtn = document.createElement("button");
+  moveUpBtn.type = "button";
+  moveUpBtn.className = "category-move-btn up";
+  moveUpBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+  moveUpBtn.addEventListener("click", () => moveCategoryRow(row, "up"));
+  const moveDownBtn = document.createElement("button");
+  moveDownBtn.type = "button";
+  moveDownBtn.className = "category-move-btn down";
+  moveDownBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+  moveDownBtn.addEventListener("click", () => moveCategoryRow(row, "down"));
+  reorderControls.appendChild(moveUpBtn);
+  reorderControls.appendChild(moveDownBtn);
+  reorderCell.appendChild(reorderControls);
+  if (isNew) {
+    reorderCell.classList.add("category-reorder-disabled");
+    moveUpBtn.disabled = true;
+    moveDownBtn.disabled = true;
+    reorderCell.title = "Save category to reorder";
+  }
+
   const slugCell = document.createElement("td");
   const slugInput = document.createElement("input");
   slugInput.type = "text";
@@ -763,6 +879,7 @@ function buildCategoryRow(cat, isNew) {
   actionsWrapper.appendChild(deleteBtn);
   actionsCell.appendChild(actionsWrapper);
 
+  row.appendChild(reorderCell);
   row.appendChild(slugCell);
   row.appendChild(displayCell);
   row.appendChild(intervalCell);
@@ -1507,6 +1624,7 @@ document.addEventListener("DOMContentLoaded", function () {
       true
     );
     container.prepend(row);
+    updateCategoryReorderControls();
     row.querySelector(".category-input-slug")?.focus();
   });
 

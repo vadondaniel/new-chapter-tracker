@@ -496,6 +496,16 @@ def categories_detail(category_name):
     return jsonify({"status": "success", "category": updated})
 
 
+@app.route("/api/categories/reorder", methods=["POST"])
+def categories_reorder():
+    data = request.json or {}
+    order = data.get("order") or []
+    if not isinstance(order, list) or not order:
+        return jsonify({"status": "error", "error": "Invalid order payload"}), 400
+    categories = db.reorder_categories(order)
+    return jsonify({"status": "success", "categories": categories})
+
+
 @app.route("/<category>")
 def category_index(category):
     return index(category)
