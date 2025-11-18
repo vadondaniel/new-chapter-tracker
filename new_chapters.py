@@ -1,6 +1,7 @@
 import os
 import math
 import logging
+import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
@@ -18,9 +19,6 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 DB_PATH = Path(DATA_DIR) / "chapters.db"
 db = ChapterDatabase(DB_PATH)
-
-CATEGORY_NAMES = db.get_category_names()
-CATEGORY_PREFIXES = [name for name in CATEGORY_NAMES if name != "main"]
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -69,13 +67,22 @@ def annotate_timestamp_display(entries):
 
 # --------------------- Helpers ---------------------
 def resolve_category(category=None):
-    if category in CATEGORY_NAMES:
+    names = set(db.get_category_names())
+    if category in names:
         return category
     path = request.path or ""
-    for candidate in CATEGORY_PREFIXES:
-        if path.startswith(f"/{candidate}"):
+    for candidate in names:
+        if candidate != "main" and path.startswith(f"/{candidate}"):
             return candidate
     return "main"
+
+
+def build_nav_context():
+    categories = db.get_categories()
+    counts = db.get_category_unsaved_counts()
+    for category in categories:
+        category["unsaved_count"] = counts.get(category["name"], 0)
+    return categories
 
 
 def parse_free_only(value, default):
@@ -215,6 +222,8 @@ def index(category=None):
     update_type = resolve_category(category)
     view_data = build_view_data(update_type)
 
+    nav_categories = build_nav_context()
+
     logging.info(f"Last full update ({update_type}): {view_data['last_full_update']}")
     return render_template(
         "index.html",
@@ -224,6 +233,7 @@ def index(category=None):
         last_full_update=view_data["last_full_update"],
         current_category=update_type,
         asset_version=ASSET_VERSION,
+        nav_categories=nav_categories,
     )
 
 
@@ -232,6 +242,7 @@ def chapter_data():
     category = request.args.get("category")
     update_type = resolve_category(category)
     view_data = build_view_data(update_type)
+    nav_categories = build_nav_context()
 
     differences_html = (
         render_template(
@@ -257,6 +268,7 @@ def chapter_data():
             "differences": {"count": len(view_data["differences"]), "html": differences_html},
             "same_data": {"count": len(view_data["same_data"]), "html": same_html},
             "last_full_update": view_data["last_full_update"],
+            "nav": {"categories": nav_categories},
         }
     )
 
@@ -426,77 +438,108 @@ app.add_url_rule("/history", endpoint="main_history", view_func=lambda: history(
 app.add_url_rule("/history/set_saved", endpoint="main_history_set_saved", view_func=lambda: history_set_saved("main"), methods=["POST"])
 app.add_url_rule("/history/delete", endpoint="main_history_delete", view_func=lambda: history_delete_entry("main"), methods=["POST"])
 
-# dynamically add routes for each category
-for category in CATEGORY_PREFIXES:
-    app.add_url_rule(
-        f"/{category}",
-        endpoint=f"{category}_index",   # unique endpoint name
-        view_func=lambda cat=category: index(cat)
+# dynamically add routes for any category slug
+@app.route("/api/categories", methods=["GET", "POST"])
+def categories_api():
+    if request.method == "GET":
+        return jsonify(build_nav_context())
+
+    data = request.json or {}
+    name = data.get("name")
+    display_name = data.get("display_name")
+    include_in_nav = parse_free_only(data.get("include_in_nav", True), True)
+    update_interval = data.get("update_interval_hours") or data.get("update_interval")
+    try:
+        created = db.create_category(
+            name=name,
+            display_name=display_name,
+            include_in_nav=include_in_nav,
+            update_interval_hours=update_interval,
+        )
+    except sqlite3.IntegrityError:
+        return jsonify({"status": "error", "error": "Category already exists"}), 400
+    except ValueError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 400
+    return jsonify({"status": "success", "category": created})
+
+
+@app.route("/api/categories/<category_name>", methods=["PUT", "DELETE"])
+def categories_detail(category_name):
+    if request.method == "DELETE":
+        try:
+            deleted = db.delete_category(category_name)
+        except ValueError as exc:
+            return jsonify({"status": "error", "error": str(exc)}), 400
+        if not deleted:
+            return jsonify({"status": "missing"}), 404
+        return jsonify({"status": "success"})
+
+    data = request.json or {}
+    updated = db.update_category_entry(
+        name=category_name,
+        new_name=data.get("name"),
+        display_name=data.get("display_name"),
+        include_in_nav=parse_free_only(data.get("include_in_nav"), None),
+        update_interval_hours=data.get("update_interval_hours"),
     )
-    app.add_url_rule(
-        f"/{category}/update",
-        endpoint=f"{category}_update",
-        view_func=lambda cat=category: update(cat),
-        methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/{category}/force_update",
-        endpoint=f"{category}_force_update",
-        view_func=lambda cat=category: force_update(cat),
-        methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/{category}/recheck",
-        endpoint=f"{category}_recheck",
-        view_func=lambda cat=category: recheck(cat),
-        methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/{category}/add",
-        endpoint=f"{category}_add",
-        view_func=lambda cat=category: add_link(cat),
-        methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/{category}/edit",
-        endpoint=f"{category}_edit",
-        view_func=lambda cat=category: edit_link(cat),
-        methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/{category}/remove",
-        endpoint=f"{category}_remove",
-        view_func=lambda cat=category: remove_link(cat),
-        methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/{category}/favorite",
-        endpoint=f"{category}_favorite",
-        view_func=lambda cat=category: favorite_link(cat),
-        methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/{category}/history",
-        endpoint=f"{category}_history",
-        view_func=lambda cat=category: history(cat),
-        methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/{category}/history/set_saved",
-        endpoint=f"{category}_history_set_saved",
-        view_func=lambda cat=category: history_set_saved(cat),
-        methods=["POST"],
-    )
-    app.add_url_rule(
-        f"/{category}/history/delete",
-        endpoint=f"{category}_history_delete",
-        view_func=lambda cat=category: history_delete_entry(cat),
-        methods=["POST"],
-    )
-    
-@app.route("/api/categories")
-def get_categories():
-    return jsonify(db.get_categories())
+    if not updated:
+        return jsonify({"status": "missing"}), 404
+    return jsonify({"status": "success", "category": updated})
+
+
+@app.route("/<category>")
+def category_index(category):
+    return index(category)
+
+
+@app.route("/<category>/update", methods=["POST"])
+def category_update_route(category):
+    return update(category)
+
+
+@app.route("/<category>/force_update", methods=["POST"])
+def category_force_update_route(category):
+    return force_update(category)
+
+
+@app.route("/<category>/recheck", methods=["POST"])
+def category_recheck_route(category):
+    return recheck(category)
+
+
+@app.route("/<category>/add", methods=["POST"])
+def category_add_route(category):
+    return add_link(category)
+
+
+@app.route("/<category>/edit", methods=["POST"])
+def category_edit_route(category):
+    return edit_link(category)
+
+
+@app.route("/<category>/remove", methods=["POST"])
+def category_remove_route(category):
+    return remove_link(category)
+
+
+@app.route("/<category>/favorite", methods=["POST"])
+def category_favorite_route(category):
+    return favorite_link(category)
+
+
+@app.route("/<category>/history", methods=["POST"])
+def category_history_route(category):
+    return history(category)
+
+
+@app.route("/<category>/history/set_saved", methods=["POST"])
+def category_history_set_route(category):
+    return history_set_saved(category)
+
+
+@app.route("/<category>/history/delete", methods=["POST"])
+def category_history_delete_route(category):
+    return history_delete_entry(category)
 
 
 @app.route("/favicon.ico")

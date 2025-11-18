@@ -43,6 +43,7 @@
     </noscript>
     <script>
       var update_in_progress = {{ update_in_progress|tojson }};
+      window.initialCategoryData = {{ nav_categories|tojson }};
     </script>
     <script defer src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <link
@@ -99,109 +100,133 @@
   </head>
   <body data-category="{{ current_category }}" data-last-update="{{ last_full_update }}">
     {% from "macros/chapter_table.html" import render_chapter_table %}
-    <div class="container">
-      <h1>New Chapter Tracker</h1>
-
-        <div class="table-header" id="newChaptersHeader">
-          <h2 class="toggle" data-section="new" onclick="toggleSection(this)">
-          New Chapters <span class="badge" id="newChaptersBadge">{{ differences|length }}</span>
-        </h2>
-        <div class="full-update-tooltip">
-          <button onclick="forceUpdate()">
-            <i class="fas fa-sync-alt"></i> Force Full Update
-          </button>
-          <span class="tooltiptext" id="lastUpdateTooltip">
-            {{ last_full_update }}
-          </span>
+    <div class="layout-shell">
+      <nav class="category-nav" id="categoryNav" aria-label="Tracked categories">
+        <div class="category-nav__list" id="categoryNavList">
+          {% for nav in nav_categories if nav.include_in_nav %}
+            {% set nav_url = url_for('main_index') if nav.name == 'main' else url_for('category_index', category=nav.name) %}
+            <a
+              href="{{ nav_url }}"
+              class="category-nav__item {% if nav.name == current_category %}active{% endif %}"
+              data-category="{{ nav.name }}"
+            >
+              <span class="category-nav__label">{{ nav.display_name }}</span>
+              <span class="category-nav__count" id="navCount-{{ nav.name }}">{{ nav.unsaved_count }}</span>
+            </a>
+          {% endfor %}
         </div>
-      </div>
+        <button type="button" id="openSettingsBtn" class="category-nav__item category-nav__item--settings">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </button>
+      </nav>
 
-      <div class="collapsible-content" id="newChaptersContent">
-        {% if differences %}
-        {{ render_chapter_table(
-          differences,
-          show_found_column=True,
-          show_save_button=True
-        ) }}
-        {% else %}
-        <div class="status-box status-success">
-          <i class="fas fa-check-circle"></i>
-          <span>All chapters are up to date!</span>
-        </div>
-        {% endif %}
-      </div>
+      <div class="content-column">
+        <div class="container">
+          <h1>New Chapter Tracker</h1>
 
-        <div class="table-header" id="sameChaptersHeader">
-        <h2 class="toggle" data-section="same" onclick="toggleSection(this)">
-          No New Chapters <span class="badge" id="sameChaptersBadge">{{ same_data|length }}</span>
-        </h2>
-      </div>
-
-      <div class="collapsible-content collapsed" id="sameChaptersContent">
-        {% if same_data %}
-        {{ render_chapter_table(
-          same_data,
-        ) }}
-        {% else %}
-        <div class="status-box status-info">
-          <i class="fas fa-info-circle"></i>
-          <span>No entries being tracked yet.</span>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Floating Add Button & Add Modal -->
-    <button id="floatingAddBtn" class="floating-add" aria-label="Add link">
-      <i class="fas fa-plus"></i>
-    </button>
-
-    <div
-      id="addModal"
-      class="modal hidden"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="addModalTitle"
-    >
-      <div class="modal-backdrop" id="addModalBackdrop" tabindex="-1"></div>
-      <div class="modal-box" role="document">
-        <h2 id="addModalTitle">Add New Link</h2>
-        <div class="modal-body">
-          <input id="modalName" type="text" placeholder="Name" />
-          <input id="modalUrl" type="text" placeholder="URL" />
-          <div class="modal-field-row">
-            <label class="modal-field">
-              <input
-                id="modalFrequency"
-                type="number"
-                min="1"
-                step="1"
-                placeholder="Update frequency (days)"
-              />
-              <span class="modal-info tooltip" aria-hidden="true">
-                <i class="fas fa-info-circle"></i>
-                <span class="tooltiptext info-tooltiptext">
-                  Using a longer update frequency reduces scrape pressure on the
-                  source and can help avoid rate limits; shorter intervals keep you
-                  closer to new chapters. Manual updates always fetch whatever’s
-                  available, no matter the schedule.
-                </span>
+          <div class="table-header" id="newChaptersHeader">
+            <h2 class="toggle" data-section="new" onclick="toggleSection(this)">
+              New Chapters <span class="badge" id="newChaptersBadge">{{ differences|length }}</span>
+            </h2>
+            <div class="full-update-tooltip">
+              <button onclick="forceUpdate()">
+                <i class="fas fa-sync-alt"></i> Force Full Update
+              </button>
+              <span class="tooltiptext" id="lastUpdateTooltip">
+                {{ last_full_update }}
               </span>
-            </label>
-            <label class="modal-checkbox tooltip modal-checkbox-inline">
-              <input type="checkbox" id="modalFreeOnly" />
-              <span class="custom-checkbox" aria-hidden="true"></span>
-              <span>Restrict to free chapters only</span>
-              <span class="tooltiptext info-tooltiptext">
-                If the website/scraper supports it, you can choose to exclude paid
-                entries/chapters from being found.
-              </span>
-            </label>
+            </div>
+          </div>
+
+          <div class="collapsible-content" id="newChaptersContent">
+            {% if differences %}
+            {{ render_chapter_table(
+              differences,
+              show_found_column=True,
+              show_save_button=True
+            ) }}
+            {% else %}
+            <div class="status-box status-success">
+              <i class="fas fa-check-circle"></i>
+              <span>All chapters are up to date!</span>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="table-header" id="sameChaptersHeader">
+            <h2 class="toggle" data-section="same" onclick="toggleSection(this)">
+              No New Chapters <span class="badge" id="sameChaptersBadge">{{ same_data|length }}</span>
+            </h2>
+          </div>
+
+          <div class="collapsible-content collapsed" id="sameChaptersContent">
+            {% if same_data %}
+            {{ render_chapter_table(
+              same_data,
+            ) }}
+            {% else %}
+            <div class="status-box status-info">
+              <i class="fas fa-info-circle"></i>
+              <span>No entries being tracked yet.</span>
+            </div>
+            {% endif %}
           </div>
         </div>
-        <div class="modal-actions">
-          <button id="modalAddBtn"><i class="fas fa-plus"></i> Add</button>
-          <button id="modalCancelBtn" class="danger">Cancel</button>
+
+        <!-- Floating Add Button & Add Modal -->
+        <button id="floatingAddBtn" class="floating-add" aria-label="Add link">
+          <i class="fas fa-plus"></i>
+        </button>
+
+        <div
+          id="addModal"
+          class="modal hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="addModalTitle"
+        >
+          <div class="modal-backdrop" id="addModalBackdrop" tabindex="-1"></div>
+          <div class="modal-box" role="document">
+            <h2 id="addModalTitle">Add New Link</h2>
+            <div class="modal-body">
+              <input id="modalName" type="text" placeholder="Name" />
+              <input id="modalUrl" type="text" placeholder="URL" />
+              <div class="modal-field-row">
+                <label class="modal-field">
+                  <input
+                    id="modalFrequency"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="Update frequency (days)"
+                  />
+                  <span class="modal-info tooltip" aria-hidden="true">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="tooltiptext info-tooltiptext">
+                      Using a longer update frequency reduces scrape pressure on the
+                      source and can help avoid rate limits; shorter intervals keep you
+                      closer to new chapters. Manual updates always fetch whatever’s
+                      available, no matter the schedule.
+                    </span>
+                  </span>
+                </label>
+                <label class="modal-checkbox tooltip modal-checkbox-inline">
+                  <input type="checkbox" id="modalFreeOnly" />
+                  <span class="custom-checkbox" aria-hidden="true"></span>
+                  <span>Restrict to free chapters only</span>
+                  <span class="tooltiptext info-tooltiptext">
+                    If the website/scraper supports it, you can choose to exclude paid
+                    entries/chapters from being found.
+                  </span>
+                </label>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button id="modalAddBtn"><i class="fas fa-plus"></i> Add</button>
+              <button id="modalCancelBtn" class="danger">Cancel</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -230,6 +255,99 @@
           </div>
         </div>
         <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+
+    <div
+      id="settingsModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settingsModalTitle"
+    >
+      <div class="modal-backdrop" id="settingsModalBackdrop" tabindex="-1"></div>
+      <div class="modal-box settings-box" role="document">
+        <h2 id="settingsModalTitle">Settings</h2>
+
+        <section class="settings-section">
+          <h3>Theme</h3>
+          <div class="settings-options theme-options" role="radiogroup" aria-label="Theme mode">
+            <label class="pill-option">
+              <input type="radio" name="themeMode" value="auto" checked />
+              <span>Auto</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="themeMode" value="light" />
+              <span>Light</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="themeMode" value="dark" />
+              <span>Dark</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3>Accent</h3>
+          <div class="accent-options" id="accentOptions">
+            <button type="button" class="accent-swatch" data-accent="emerald" aria-label="Emerald"></button>
+            <button type="button" class="accent-swatch" data-accent="indigo" aria-label="Indigo"></button>
+            <button type="button" class="accent-swatch" data-accent="amber" aria-label="Amber"></button>
+            <button type="button" class="accent-swatch" data-accent="rose" aria-label="Rose"></button>
+            <button type="button" class="accent-swatch" data-accent="slate" aria-label="Slate"></button>
+          </div>
+        </section>
+        <section class="settings-section settings-section--categories">
+          <div class="settings-section__header">
+            <div class="settings-section__intro">
+              <h3>Categories</h3>
+            </div>
+            <button type="button" id="openCategoryManagerBtn" class="settings-launcher">
+              <i class="fas fa-list-alt"></i>
+              Manage Categories
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div
+      id="categoryModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="categoryModalTitle"
+    >
+      <div class="modal-backdrop" id="categoryModalBackdrop" tabindex="-1"></div>
+      <div class="modal-box category-box" role="document">
+        <div class="category-modal__header">
+          <div>
+            <h2 id="categoryModalTitle">Category Manager</h2>
+          </div>
+          <button type="button" id="categoryAddRowBtn">
+            <i class="fas fa-plus"></i>
+            Add Category
+          </button>
+        </div>
+        <table class="category-table" aria-label="Category manager">
+          <colgroup>
+            <col class="category-col-id" />
+            <col class="category-col-display" />
+            <col class="category-col-interval" />
+            <col class="category-col-toggle" />
+            <col class="category-col-actions" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Display Name</th>
+              <th>Interval (hrs)</th>
+              <th></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="categoryManagerList"></tbody>
+        </table>
       </div>
     </div>
 

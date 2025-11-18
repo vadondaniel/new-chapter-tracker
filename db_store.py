@@ -97,11 +97,42 @@ class ChapterDatabase:
             CREATE TABLE IF NOT EXISTS categories (
                 name TEXT PRIMARY KEY,
                 update_interval_hours INTEGER NOT NULL DEFAULT 1,
-                last_checked TEXT
+                last_checked TEXT,
+                display_name TEXT,
+                include_in_nav INTEGER NOT NULL DEFAULT 1
             )
             """
         )
+        self._ensure_category_columns(conn)
         self._seed_categories(conn)
+
+    def _ensure_category_columns(self, conn):
+        columns = {
+            row["name"]: row for row in conn.execute("PRAGMA table_info(categories)").fetchall()
+        }
+        if "display_name" not in columns:
+            conn.execute("ALTER TABLE categories ADD COLUMN display_name TEXT")
+        if "include_in_nav" not in columns:
+            conn.execute(
+                "ALTER TABLE categories ADD COLUMN include_in_nav INTEGER NOT NULL DEFAULT 1"
+            )
+        rows = conn.execute("SELECT name, display_name FROM categories").fetchall()
+        for row in rows:
+            current = (row["display_name"] or "").strip()
+            fallback = (row["name"][:1] or "M").upper()
+            if current and current != fallback:
+                continue
+            conn.execute(
+                "UPDATE categories SET display_name = ? WHERE name = ?",
+                (self._default_display_name(row["name"]), row["name"]),
+            )
+        conn.execute(
+            """
+            UPDATE categories
+            SET include_in_nav = 1
+            WHERE include_in_nav IS NULL
+            """
+        )
 
     def _seed_categories(self, conn):
         existing = {
@@ -110,8 +141,15 @@ class ChapterDatabase:
         for name, hours in _DEFAULT_CATEGORIES:
             if name not in existing:
                 conn.execute(
-                    "INSERT INTO categories (name, update_interval_hours) VALUES (?, ?)",
-                    (name, hours),
+                    """
+                    INSERT INTO categories (
+                        name,
+                        update_interval_hours,
+                        display_name,
+                        include_in_nav
+                    ) VALUES (?, ?, ?, 1)
+                    """,
+                    (name, hours, self._default_display_name(name)),
                 )
 
     def _ensure_links_columns(self, conn):
@@ -143,10 +181,30 @@ class ChapterDatabase:
     def _to_flag(value):
         return 1 if bool(value) else 0
 
+    def _default_display_name(self, name: str) -> str:
+        if not name:
+            return "Main"
+        normalized = (name or "").strip()
+        if not normalized:
+            return "Main"
+        if normalized.lower() == "main":
+            return "Main"
+        human = normalized.replace("_", " ").replace("-", " ").strip()
+        return human.title() or "Main"
+
+    def _normalize_category(self, value: str) -> str:
+        return (value or "").strip().lower()
+
+    def _sanitize_interval(self, value: Any) -> int:
+        try:
+            return max(1, int(value))
+        except (TypeError, ValueError):
+            return 1
+
     def _get_link_id(self, url: str) -> Optional[int]:
         with self._connect() as conn:
             row = conn.execute("SELECT id FROM links WHERE url = ?", (url,)).fetchone()
-            return row["id"] if row else None
+        return row["id"] if row else None
 
     def get_links(self, category: str) -> List[Dict]:
         with self._connect() as conn:
@@ -468,7 +526,11 @@ class ChapterDatabase:
         with self._connect() as conn:
             rows = conn.execute(
                 """
-                SELECT name, update_interval_hours, last_checked
+                SELECT name,
+                       update_interval_hours,
+                       last_checked,
+                       display_name,
+                       include_in_nav
                 FROM categories
                 ORDER BY CASE name WHEN 'main' THEN 0 ELSE 1 END, name
                 """
@@ -478,6 +540,8 @@ class ChapterDatabase:
                 "name": row["name"],
                 "update_interval_hours": row["update_interval_hours"],
                 "last_checked": row["last_checked"],
+                "display_name": row["display_name"] or self._default_display_name(row["name"]),
+                "include_in_nav": bool(row["include_in_nav"]),
             }
             for row in rows
         ]
@@ -485,7 +549,11 @@ class ChapterDatabase:
     def get_category(self, name: str) -> Optional[Dict[str, Any]]:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT name, update_interval_hours, last_checked FROM categories WHERE name = ?",
+                """
+                SELECT name, update_interval_hours, last_checked, display_name, include_in_nav
+                FROM categories
+                WHERE name = ?
+                """,
                 (name,),
             ).fetchone()
         if not row:
@@ -494,6 +562,8 @@ class ChapterDatabase:
             "name": row["name"],
             "update_interval_hours": row["update_interval_hours"],
             "last_checked": row["last_checked"],
+            "display_name": row["display_name"] or self._default_display_name(row["name"]),
+            "include_in_nav": bool(row["include_in_nav"]),
         }
 
     def get_category_names(self) -> List[str]:
@@ -505,3 +575,113 @@ class ChapterDatabase:
                 "UPDATE categories SET last_checked = ? WHERE name = ?",
                 (timestamp, name),
             )
+
+    def get_category_unsaved_counts(self) -> Dict[str, int]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    category,
+                    SUM(
+                        CASE
+                            WHEN latest_last_found IS NOT NULL
+                                 AND latest_last_found <> IFNULL(last_saved, '')
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS unsaved
+                FROM (
+                    SELECT
+                        l.category AS category,
+                        l.last_saved AS last_saved,
+                        (
+                            SELECT last_found
+                            FROM scraped_entries se
+                            WHERE se.link_id = l.id
+                            ORDER BY se.id DESC
+                            LIMIT 1
+                        ) AS latest_last_found
+                    FROM links l
+                ) data
+                GROUP BY category
+                """
+            ).fetchall()
+        return {row["category"]: row["unsaved"] or 0 for row in rows}
+
+    def create_category(
+        self,
+        name: str,
+        update_interval_hours: int = 1,
+        display_name: Optional[str] = None,
+        include_in_nav: bool = True,
+    ) -> Dict[str, Any]:
+        normalized = self._normalize_category(name)
+        if not normalized:
+            raise ValueError("Category name is required")
+        display = (display_name or "").strip() or self._default_display_name(normalized)
+        interval = self._sanitize_interval(update_interval_hours or 1)
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO categories (name, update_interval_hours, display_name, include_in_nav)
+                VALUES (?, ?, ?, ?)
+                """,
+                (normalized, interval, display, self._to_flag(include_in_nav)),
+            )
+        return self.get_category(normalized) or {}
+
+    def update_category_entry(
+        self,
+        name: str,
+        new_name: Optional[str] = None,
+        update_interval_hours: Optional[int] = None,
+        display_name: Optional[str] = None,
+        include_in_nav: Optional[bool] = None,
+    ) -> Optional[Dict[str, Any]]:
+        current = self.get_category(name)
+        if not current:
+            return None
+        updates = []
+        params: List[Any] = []
+        normalized_new_name = self._normalize_category(new_name) if new_name else None
+        if normalized_new_name and normalized_new_name != name:
+            updates.append("name = ?")
+            params.append(normalized_new_name)
+        if update_interval_hours is not None:
+            updates.append("update_interval_hours = ?")
+            params.append(self._sanitize_interval(update_interval_hours))
+        if display_name is not None:
+            base_name = normalized_new_name or name
+            cleaned = (display_name or "").strip() or self._default_display_name(base_name)
+            updates.append("display_name = ?")
+            params.append(cleaned)
+        if include_in_nav is not None:
+            updates.append("include_in_nav = ?")
+            params.append(self._to_flag(include_in_nav))
+        if not updates:
+            return current
+
+        with self._connect() as conn:
+            conn.execute(
+                f"UPDATE categories SET {', '.join(updates)} WHERE name = ?",
+                (*params, name),
+            )
+            if normalized_new_name and normalized_new_name != name:
+                conn.execute(
+                    "UPDATE links SET category = ? WHERE category = ?",
+                    (normalized_new_name, name),
+                )
+        target_name = normalized_new_name or name
+        return self.get_category(target_name)
+
+    def delete_category(self, name: str) -> bool:
+        normalized = self._normalize_category(name)
+        if normalized == "main":
+            raise ValueError("Main category cannot be removed")
+        with self._connect() as conn:
+            conn.execute("DELETE FROM links WHERE category = ?", (normalized,))
+            result = conn.execute(
+                "DELETE FROM categories WHERE name = ?",
+                (normalized,),
+            )
+        return result.rowcount > 0

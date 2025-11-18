@@ -2,10 +2,143 @@ var socket = io();
 
 let PREFIXES = [];
 let historyContext = null;
+let categoryData = Array.isArray(window.initialCategoryData)
+  ? window.initialCategoryData
+  : [];
+const DEFAULT_THEME = "auto";
+const DEFAULT_ACCENT = "emerald";
+let activeModalCount = 0;
 
-async function loadPrefixes() {
-  const response = await fetch("/api/categories");
-  const categories = await response.json();
+function updateBodyModalState(delta) {
+  activeModalCount = Math.max(0, activeModalCount + delta);
+  if (activeModalCount > 0) {
+    document.body?.classList.add("modal-open");
+  } else {
+    document.body?.classList.remove("modal-open");
+  }
+}
+
+function showModalElement(element) {
+  if (element && element.classList.contains("hidden")) {
+    element.classList.remove("hidden");
+    updateBodyModalState(1);
+  }
+}
+
+function hideModalElement(element) {
+  if (element && !element.classList.contains("hidden")) {
+    element.classList.add("hidden");
+    updateBodyModalState(-1);
+  }
+}
+
+function applyThemePreference(mode) {
+  const root = document.documentElement;
+  const target = mode || DEFAULT_THEME;
+  if (!root) return target;
+  if (target === "auto") {
+    root.removeAttribute("data-theme");
+    localStorage.removeItem("chapterTheme");
+  } else {
+    root.setAttribute("data-theme", target);
+    localStorage.setItem("chapterTheme", target);
+  }
+  return target;
+}
+
+function applyAccentPreference(accent) {
+  const root = document.documentElement;
+  const value = accent || DEFAULT_ACCENT;
+  if (!root) return value;
+  root.setAttribute("data-accent", value);
+  localStorage.setItem("chapterAccent", value);
+  return value;
+}
+
+function markActiveAccent(accent) {
+  document.querySelectorAll(".accent-swatch").forEach((btn) => {
+    if (!btn) return;
+    btn.classList.toggle("active", btn.dataset.accent === accent);
+  });
+}
+
+function renderCategoryNav(categories = categoryData) {
+  const list = document.getElementById("categoryNavList");
+  if (!list || !Array.isArray(categories)) {
+    return;
+  }
+  categoryData = categories;
+  const current = getCurrentCategory();
+  const existingLinks = new Map(
+    Array.from(list.querySelectorAll(".category-nav__item[data-category]")).map((link) => [
+      link.dataset.category,
+      link,
+    ])
+  );
+  const renderedNames = new Set();
+  let insertIndex = 0;
+
+  categories
+    .filter((cat) => cat && cat.include_in_nav)
+    .forEach((cat) => {
+      const name = cat.name;
+      if (!name) return;
+      renderedNames.add(name);
+
+      let link = existingLinks.get(name);
+      if (!link) {
+        link = document.createElement("a");
+        link.className = "category-nav__item";
+        link.dataset.category = name;
+
+        const newLabel = document.createElement("span");
+        newLabel.className = "category-nav__label";
+        link.appendChild(newLabel);
+
+        const newCount = document.createElement("span");
+        newCount.className = "category-nav__count";
+        link.appendChild(newCount);
+
+        list.appendChild(link);
+      }
+
+      const targetUrl = name === "main" ? "/" : `/${name}`;
+      link.href = targetUrl;
+      link.classList.toggle("active", name === current);
+
+      let label = link.querySelector(".category-nav__label");
+      if (!label) {
+        label = document.createElement("span");
+        label.className = "category-nav__label";
+        link.insertBefore(label, link.firstChild);
+      }
+      label.textContent = cat.display_name || name;
+
+      let count = link.querySelector(".category-nav__count");
+      if (!count) {
+        count = document.createElement("span");
+        count.className = "category-nav__count";
+        link.appendChild(count);
+      }
+      count.id = `navCount-${name}`;
+      count.textContent = cat.unsaved_count ?? 0;
+
+      // Keep DOM order in sync without removing nodes unnecessarily
+      const targetNode = list.children[insertIndex];
+      if (targetNode !== link) {
+        list.insertBefore(link, targetNode ?? null);
+      }
+      insertIndex += 1;
+    });
+
+  existingLinks.forEach((link, name) => {
+    if (!renderedNames.has(name)) {
+      link.remove();
+    }
+  });
+}
+
+function setPrefixesFromCategories(categories) {
   const names = Array.isArray(categories)
     ? categories
         .map((c) => (typeof c === "string" ? c : c.name))
@@ -16,7 +149,46 @@ async function loadPrefixes() {
     .map((name) => `/${name}`);
 }
 
+const initialThemeChoice =
+  localStorage.getItem("chapterTheme") || DEFAULT_THEME;
+const initialAccentChoice =
+  localStorage.getItem("chapterAccent") || DEFAULT_ACCENT;
+applyThemePreference(initialThemeChoice);
+applyAccentPreference(initialAccentChoice);
+markActiveAccent(initialAccentChoice);
+
+async function loadPrefixes() {
+  const response = await fetch("/api/categories");
+  const categories = await response.json();
+  if (Array.isArray(categories)) {
+    categoryData = categories;
+    renderCategoryNav(categoryData);
+  }
+  setPrefixesFromCategories(categories);
+}
+
+if (Array.isArray(categoryData) && categoryData.length > 0) {
+  setPrefixesFromCategories(categoryData);
+}
+
 loadPrefixes();
+renderCategoryNav(categoryData);
+setPrefixesFromCategories(categoryData);
+
+async function refreshCategoriesFromServer() {
+  const response = await fetch("/api/categories");
+  if (!response.ok) {
+    throw new Error("Failed to load categories");
+  }
+  const data = await response.json();
+  if (Array.isArray(data)) {
+    categoryData = data;
+    renderCategoryNav(categoryData);
+    renderCategoryManagerList();
+    setPrefixesFromCategories(data);
+  }
+  return data;
+}
 
 function actionPath(action) {
   const prefix =
@@ -37,8 +209,9 @@ function hideSpinner() {
 }
 
 // ===== Progress updates via WebSocket =====
-const getCurrentCategory = () =>
-  document.body?.dataset.category || "main";
+function getCurrentCategory() {
+  return document.body?.dataset.category || "main";
+}
 
 socket.on("update_progress", function (data) {
   const targetCategory = data?.category || "main";
@@ -449,14 +622,246 @@ async function refreshChapterTables() {
     sameContent.innerHTML = payload.same_data.html;
     initRowEnhancements(sameContent);
   }
+  if (payload.nav && Array.isArray(payload.nav.categories)) {
+    renderCategoryNav(payload.nav.categories);
+  }
   updateLastUpdateTooltip(payload.last_full_update);
   return payload;
+}
+
+function renderCategoryManagerList() {
+  const container = document.getElementById("categoryManagerList");
+  if (!container) return;
+  container.innerHTML = "";
+  categoryData.forEach((cat) =>
+    container.appendChild(buildCategoryRow(cat, false))
+  );
+}
+
+function hasRowChanged(row) {
+  const slug = row.querySelector(".category-input-slug")?.value.trim() || "";
+  const display =
+    row.querySelector(".category-input-display")?.value.trim() || "";
+  const interval =
+    row.querySelector(".category-input-interval")?.value.trim() || "1";
+  const include = row.querySelector(".category-input-include")?.checked;
+  const payload = {
+    name: slug.toLowerCase(),
+    display_name: display,
+    update_interval_hours: interval,
+    include_in_nav: include,
+  };
+  const originalName = row.dataset.originalName || slug;
+  const originalDisplay = row.dataset.originalDisplay || "";
+  const originalInterval = row.dataset.originalInterval || "1";
+  const originalInclude =
+    row.dataset.originalInclude === undefined
+      ? "true"
+      : row.dataset.originalInclude;
+  return (
+    row.dataset.mode === "new" ||
+    payload.name !== originalName ||
+    payload.display_name !== originalDisplay ||
+    String(payload.update_interval_hours) !== originalInterval ||
+    String(payload.include_in_nav) !== originalInclude
+  );
+}
+
+function buildCategoryRow(cat, isNew) {
+  const row = document.createElement("tr");
+  row.className = "category-table__row";
+  if (isNew) {
+    row.classList.add("new-row");
+  }
+  row.dataset.mode = isNew ? "new" : "existing";
+  row.dataset.originalName = cat?.name || "";
+  row.dataset.originalDisplay = cat?.display_name || "";
+  row.dataset.originalInterval = String(
+    cat?.update_interval_hours || 1
+  );
+  row.dataset.originalInclude = String(
+    cat?.include_in_nav === undefined ? true : !!cat.include_in_nav
+  );
+  const slugCell = document.createElement("td");
+  const slugInput = document.createElement("input");
+  slugInput.type = "text";
+  slugInput.value = cat?.name || "";
+  slugInput.placeholder = "identifier";
+  slugInput.setAttribute("aria-label", "Category ID");
+  slugInput.className = "category-input-slug";
+  const isMain = (cat?.name || "").toLowerCase() === "main";
+  slugInput.disabled = !isNew && isMain;
+  slugCell.appendChild(slugInput);
+
+  const displayCell = document.createElement("td");
+  const displayInput = document.createElement("input");
+  displayInput.type = "text";
+  displayInput.value = cat?.display_name || "";
+  displayInput.placeholder = "Display name";
+  displayInput.className = "category-input-display";
+  displayInput.setAttribute("aria-label", "Display name");
+  displayCell.appendChild(displayInput);
+
+  const intervalCell = document.createElement("td");
+  const intervalInput = document.createElement("input");
+  intervalInput.type = "number";
+  intervalInput.min = "1";
+  intervalInput.step = "1";
+  intervalInput.value = cat?.update_interval_hours || 1;
+  intervalInput.className = "category-input-interval";
+  intervalInput.setAttribute("aria-label", "Update interval (hours)");
+  intervalCell.appendChild(intervalInput);
+
+  const includeCell = document.createElement("td");
+  includeCell.className = "category-table__toggle";
+  const includeWrapper = document.createElement("label");
+  const includeInput = document.createElement("input");
+  includeInput.type = "checkbox";
+  includeInput.checked =
+    isNew || cat?.include_in_nav === undefined ? true : !!cat.include_in_nav;
+  includeInput.className = "category-input-include";
+  includeInput.setAttribute("aria-label", "Show in navigation");
+  includeWrapper.appendChild(includeInput);
+  includeCell.appendChild(includeWrapper);
+
+  const actionsCell = document.createElement("td");
+  const actionsWrapper = document.createElement("div");
+  actionsWrapper.className = "category-table__actions";
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.innerHTML = '<i class="fas fa-save"></i>';
+  saveBtn.classList.add("category-save-btn");
+  saveBtn.disabled = !isNew;
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+  deleteBtn.classList.add("danger");
+  if (!isNew && isMain) {
+    deleteBtn.disabled = true;
+    deleteBtn.classList.add("disabled");
+    deleteBtn.title = "Main category cannot be removed";
+  }
+
+  saveBtn.addEventListener("click", () => saveCategoryRow(row));
+  deleteBtn.addEventListener("click", () => deleteCategoryRow(row));
+
+  const inputs = [
+    slugInput,
+    displayInput,
+    intervalInput,
+    includeInput,
+  ].filter(Boolean);
+  inputs.forEach((input) => {
+    input.addEventListener("input", () => {
+      saveBtn.disabled = !hasRowChanged(row);
+    });
+    input.addEventListener("change", () => {
+      saveBtn.disabled = !hasRowChanged(row);
+    });
+  });
+  actionsWrapper.appendChild(saveBtn);
+  actionsWrapper.appendChild(deleteBtn);
+  actionsCell.appendChild(actionsWrapper);
+
+  row.appendChild(slugCell);
+  row.appendChild(displayCell);
+  row.appendChild(intervalCell);
+  row.appendChild(includeCell);
+  row.appendChild(actionsCell);
+  return row;
+}
+
+async function saveCategoryRow(row) {
+  const slug = row.querySelector(".category-input-slug")?.value.trim() || "";
+  const display = row
+    .querySelector(".category-input-display")
+    ?.value.trim();
+  const intervalValue =
+    row.querySelector(".category-input-interval")?.value.trim() || "1";
+  const includeFlag = row.querySelector(".category-input-include")?.checked;
+
+  if (!slug) {
+    alert("Category ID is required.");
+    return;
+  }
+
+  const payload = {
+    name: slug.toLowerCase(),
+    display_name: display,
+    update_interval_hours: intervalValue,
+    include_in_nav: includeFlag,
+  };
+  const isNew = row.dataset.mode === "new";
+  const originalName = row.dataset.originalName || slug;
+  const originalDisplay = row.dataset.originalDisplay || "";
+  const originalInterval = row.dataset.originalInterval || "1";
+  const originalInclude =
+    row.dataset.originalInclude === undefined
+      ? "true"
+      : row.dataset.originalInclude;
+  const url = isNew
+    ? "/api/categories"
+    : `/api/categories/${encodeURIComponent(originalName)}`;
+  const method = isNew ? "POST" : "PUT";
+  const saveBtn = row.querySelector(".category-save-btn");
+
+  if (!hasRowChanged(row)) {
+    if (saveBtn) saveBtn.disabled = true;
+    return;
+  }
+
+  try {
+    if (saveBtn) saveBtn.disabled = true;
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || data.status !== "success") {
+      throw new Error(data.error || "Unable to save category");
+    }
+    await refreshCategoriesFromServer();
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Unable to save category.");
+  } finally {
+    if (saveBtn) saveBtn.disabled = true;
+  }
+}
+
+async function deleteCategoryRow(row) {
+  const isNew = row.dataset.mode === "new";
+  if (isNew) {
+    row.remove();
+    return;
+  }
+  const name = row.dataset.originalName;
+  if (!name || name === "main") {
+    return;
+  }
+  if (!confirm(`Delete category "${name}"? This removes its links.`)) {
+    return;
+  }
+  try {
+    const res = await fetch(`/api/categories/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (!res.ok || data.status !== "success") {
+      throw new Error(data.error || "Unable to delete category");
+    }
+    await refreshCategoriesFromServer();
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Unable to delete category.");
+  }
 }
 
 function hideHistoryModal() {
   const backdrop = document.getElementById("historyModalBackdrop");
   if (!backdrop) return;
-  backdrop.classList.add("hidden");
+  hideModalElement(backdrop);
 }
 
 function openHistoryModal(data, supportsFree) {
@@ -572,7 +977,7 @@ function openHistoryModal(data, supportsFree) {
     setupFloatingTooltips(list);
   }
 
-  backdrop.classList.remove("hidden");
+  showModalElement(backdrop);
 }
 
 async function fetchHistory(url) {
@@ -850,12 +1255,12 @@ document.addEventListener("DOMContentLoaded", function () {
       modalTitle.textContent = isEditMode ? "Edit Link" : "Add New Link";
     if (!isEditMode && modalFreeOnly) modalFreeOnly.checked = false;
     setFreeOnlyVisibility(showFreeOnly);
-    if (addModal) addModal.classList.remove("hidden");
+    showModalElement(addModal);
     setTimeout(() => modalName && modalName.focus(), 50);
   }
 
   function closeAddModal() {
-    if (addModal) addModal.classList.add("hidden");
+    hideModalElement(addModal);
     resetModalFields();
     if (modalAddBtn) {
       delete modalAddBtn.dataset.mode;
@@ -975,5 +1380,93 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") hideHistoryModal();
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const settingsModal = document.getElementById("settingsModal");
+  const settingsBackdrop = document.getElementById("settingsModalBackdrop");
+  const openSettingsBtn = document.getElementById("openSettingsBtn");
+  const closeSettingsBtn = document.getElementById("settingsCloseBtn");
+  const openCategoryBtn = document.getElementById("openCategoryManagerBtn");
+  const categoryModal = document.getElementById("categoryModal");
+  const categoryBackdrop = document.getElementById("categoryModalBackdrop");
+  const categoryCloseBtn = document.getElementById("categoryCloseBtn");
+  const categoryAddRowBtn = document.getElementById("categoryAddRowBtn");
+  const themeRadios = document.querySelectorAll('input[name="themeMode"]');
+  const accentButtons = document.querySelectorAll(".accent-swatch");
+
+  const storedTheme = localStorage.getItem("chapterTheme") || DEFAULT_THEME;
+  const storedAccent = localStorage.getItem("chapterAccent") || DEFAULT_ACCENT;
+
+  function openSettings() {
+    showModalElement(settingsModal);
+  }
+
+  function closeSettings() {
+    hideModalElement(settingsModal);
+  }
+
+  openSettingsBtn?.addEventListener("click", openSettings);
+  closeSettingsBtn?.addEventListener("click", closeSettings);
+  settingsBackdrop?.addEventListener("click", (evt) => {
+    if (evt.target === settingsBackdrop) closeSettings();
+  });
+
+  themeRadios.forEach((radio) => {
+    if (radio.value === storedTheme) {
+      radio.checked = true;
+    }
+    radio.addEventListener("change", () => applyThemePreference(radio.value));
+  });
+
+  accentButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const accent = btn.dataset.accent || DEFAULT_ACCENT;
+      markActiveAccent(accent);
+      applyAccentPreference(accent);
+    });
+  });
+  markActiveAccent(storedAccent);
+
+  function openCategoryModal() {
+    refreshCategoriesFromServer().catch(() => renderCategoryManagerList());
+    showModalElement(categoryModal);
+  }
+
+  function closeCategoryModal() {
+    hideModalElement(categoryModal);
+  }
+
+  openCategoryBtn?.addEventListener("click", openCategoryModal);
+  categoryCloseBtn?.addEventListener("click", closeCategoryModal);
+  categoryBackdrop?.addEventListener("click", (evt) => {
+    if (evt.target === categoryBackdrop) closeCategoryModal();
+  });
+
+  categoryAddRowBtn?.addEventListener("click", () => {
+    const container = document.getElementById("categoryManagerList");
+    if (!container) return;
+    const row = buildCategoryRow(
+      {
+        name: "",
+        display_name: "",
+        update_interval_hours: 1,
+        include_in_nav: true,
+      },
+      true
+    );
+    container.prepend(row);
+    row.querySelector(".category-input-slug")?.focus();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (settingsModal && !settingsModal.classList.contains("hidden")) {
+      closeSettings();
+    }
+    if (categoryModal && !categoryModal.classList.contains("hidden")) {
+      closeCategoryModal();
+    }
   });
 });
