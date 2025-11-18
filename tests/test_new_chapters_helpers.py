@@ -4,8 +4,6 @@ import pytest
 
 import scraping
 from new_chapters import (
-    CATEGORY_PREFIXES,
-    CATEGORY_NAMES,
     annotate_support_flags,
     annotate_timestamp_display,
     get_link_metadata,
@@ -13,6 +11,7 @@ from new_chapters import (
     parse_update_frequency,
     resolve_category,
     app,
+    db,
 )
 
 
@@ -82,14 +81,16 @@ def test_annotate_support_flags_uses_scraping_support_flags(monkeypatch):
 
 
 def test_resolve_category_prefers_known_names_and_path():
-    assert "main" in CATEGORY_NAMES
-    if CATEGORY_PREFIXES:
-        test_prefix = CATEGORY_PREFIXES[0]
+    category_names = db.get_category_names()
+    assert "main" in category_names
+    other_categories = [name for name in category_names if name != "main"]
+    if other_categories:
+        test_prefix = other_categories[0]
         with app.test_request_context(f"/{test_prefix}/chapter"):
             assert resolve_category() == test_prefix
     with app.test_request_context("/unknown/path"):
         assert resolve_category() == "main"
 
     # Direct category argument should win over path heuristics.
-    first_category = CATEGORY_NAMES[0]
+    first_category = category_names[0]
     assert resolve_category(first_category) == first_category
