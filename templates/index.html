@@ -45,44 +45,55 @@
       var update_in_progress = {{ update_in_progress|tojson }};
     </script>
     <script defer src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <link
+      rel="preload"
+      href="{{ url_for('favicon') }}?v={{ asset_version }}"
+      as="image"
+      importance="high"
+    />
     <!-- Favicons -->
     <link
+      rel="shortcut icon"
+      href="{{ url_for('favicon') }}?v={{ asset_version }}"
+      type="image/x-icon"
+    />
+    <link
       rel="icon"
-      href="{{ url_for('static', filename='favicon.ico') }}"
+      href="{{ url_for('favicon') }}?v={{ asset_version }}"
       type="image/x-icon"
     />
     <link
       rel="icon"
       type="image/png"
       sizes="192x192"
-      href="{{ url_for('static', filename='android-icon-192x192.png') }}"
+      href="{{ url_for('static', filename='android-icon-192x192.png') }}?v={{ asset_version }}"
     />
     <link
       rel="icon"
       type="image/png"
       sizes="32x32"
-      href="{{ url_for('static', filename='favicon-32x32.png') }}"
+      href="{{ url_for('static', filename='favicon-32x32.png') }}?v={{ asset_version }}"
     />
     <link
       rel="icon"
       type="image/png"
       sizes="96x96"
-      href="{{ url_for('static', filename='favicon-96x96.png') }}"
+      href="{{ url_for('static', filename='favicon-96x96.png') }}?v={{ asset_version }}"
     />
     <link
       rel="icon"
       type="image/png"
       sizes="16x16"
-      href="{{ url_for('static', filename='favicon-16x16.png') }}"
+      href="{{ url_for('static', filename='favicon-16x16.png') }}?v={{ asset_version }}"
     />
     <link
       rel="manifest"
-      href="{{ url_for('static', filename='manifest.json') }}"
+      href="{{ url_for('static', filename='manifest.json') }}?v={{ asset_version }}"
     />
     <meta name="msapplication-TileColor" content="#ffffff" />
     <meta
       name="msapplication-TileImage"
-      content="{{ url_for('static', filename='ms-icon-144x144.png') }}"
+      content="{{ url_for('static', filename='ms-icon-144x144.png') }}?v={{ asset_version }}"
     />
     <meta name="theme-color" content="#ffffff" />
   </head>

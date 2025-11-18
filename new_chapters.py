@@ -3,7 +3,7 @@ import math
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -25,6 +25,7 @@ CATEGORY_PREFIXES = [name for name in CATEGORY_NAMES if name != "main"]
 app = Flask(__name__)
 socketio = SocketIO(app)
 update_in_progress = False
+ASSET_VERSION = os.environ.get("CHAPTER_TRACKER_ASSET_VERSION", "1")
 
 # Pass the socketio object to scraping.py
 import scraping
@@ -222,6 +223,7 @@ def index(category=None):
         update_in_progress=update_in_progress,
         last_full_update=view_data["last_full_update"],
         current_category=update_type,
+        asset_version=ASSET_VERSION,
     )
 
 
@@ -496,7 +498,16 @@ for category in CATEGORY_PREFIXES:
 def get_categories():
     return jsonify(db.get_categories())
 
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
+
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
     schedule_updates()
-    app.run(host="0.0.0.0", debug=True, port=555)
+    app.run(host="0.0.0.0", debug=False, port=555)
