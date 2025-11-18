@@ -144,7 +144,8 @@
             {{ render_chapter_table(
               differences,
               show_found_column=True,
-              show_save_button=True
+              show_save_button=True,
+              current_category=current_category
             ) }}
             {% else %}
             <div class="status-box status-success">
@@ -164,6 +165,7 @@
             {% if same_data %}
             {{ render_chapter_table(
               same_data,
+              current_category=current_category
             ) }}
             {% else %}
             <div class="status-box status-info">
@@ -221,6 +223,10 @@
                   </span>
                 </label>
               </div>
+              <label class="modal-field modal-field-select hidden" id="modalCategoryWrapper">
+                <span class="modal-field-label">Category</span>
+                <select id="modalCategory" aria-label="Change category"></select>
+              </label>
             </div>
             <div class="modal-actions">
               <button id="modalAddBtn"><i class="fas fa-plus"></i> Add</button>

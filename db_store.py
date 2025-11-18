@@ -257,17 +257,29 @@ class ChapterDatabase:
         name: str,
         update_frequency: int,
         free_only: bool,
+        category: Optional[str] = None,
     ):
         freq = self._normalize_frequency(update_frequency)
         flag = self._to_flag(free_only)
+        updates = [
+            ("url = ?", new_url),
+            ("name = ?", name),
+            ("update_frequency = ?", freq),
+            ("free_only = ?", flag),
+        ]
+        if category:
+            updates.append(("category = ?", category))
+        set_clause = ", ".join(clause for clause, _ in updates)
+        params = [value for _, value in updates]
+        params.append(original_url)
         with self._connect() as conn:
             conn.execute(
-                """
+                f"""
                 UPDATE links
-                SET url = ?, name = ?, update_frequency = ?, free_only = ?
+                SET {set_clause}
                 WHERE url = ?
                 """,
-                (new_url, name, freq, flag, original_url),
+                params,
             )
 
     def remove_link(self, url: str):

@@ -1235,6 +1235,43 @@ document.addEventListener("DOMContentLoaded", function () {
   const modalFreeOnlyWrapper = modalFreeOnly
     ? modalFreeOnly.closest(".modal-checkbox")
     : null;
+  const modalCategory = document.getElementById("modalCategory");
+  const modalCategoryWrapper = document.getElementById("modalCategoryWrapper");
+
+  function populateModalCategoryOptions(selectedValue) {
+    if (!modalCategory) return;
+    const categories =
+      Array.isArray(categoryData) && categoryData.length
+        ? categoryData
+        : [{ name: getCurrentCategory(), display_name: getCurrentCategory() }];
+    modalCategory.innerHTML = "";
+    categories.forEach((cat) => {
+      if (!cat || !cat.name) return;
+      const option = document.createElement("option");
+      option.value = cat.name;
+      option.textContent = cat.display_name || cat.name;
+      modalCategory.appendChild(option);
+    });
+    if (selectedValue) {
+      const match = categories.find((cat) => cat && cat.name === selectedValue);
+      if (match) {
+        modalCategory.value = selectedValue;
+      }
+    }
+    if (!modalCategory.value && modalCategory.options.length) {
+      modalCategory.selectedIndex = 0;
+    }
+  }
+
+  function toggleCategoryPicker(show, selectedValue) {
+    if (!modalCategoryWrapper) return;
+    modalCategoryWrapper.classList.toggle("hidden", !show);
+    if (show) {
+      populateModalCategoryOptions(selectedValue);
+    } else if (modalCategory) {
+      modalCategory.value = "";
+    }
+  }
 
   function resetModalFields() {
     if (modalName) modalName.value = "";
@@ -1242,6 +1279,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (modalFrequency) modalFrequency.value = "";
     if (modalFreeOnly) modalFreeOnly.checked = false;
     if (modalFreeOnlyWrapper) modalFreeOnlyWrapper.classList.remove("hidden");
+    toggleCategoryPicker(false);
   }
 
   function setFreeOnlyVisibility(show) {
@@ -1249,12 +1287,13 @@ document.addEventListener("DOMContentLoaded", function () {
     modalFreeOnlyWrapper.classList.toggle("hidden", !show);
   }
 
-  function openAddModal(showFreeOnly = true) {
+  function openAddModal(showFreeOnly = true, selectedCategory = null) {
     const isEditMode = modalAddBtn && modalAddBtn.dataset.mode === "edit";
     if (modalTitle)
       modalTitle.textContent = isEditMode ? "Edit Link" : "Add New Link";
     if (!isEditMode && modalFreeOnly) modalFreeOnly.checked = false;
     setFreeOnlyVisibility(showFreeOnly);
+    toggleCategoryPicker(isEditMode, selectedCategory || getCurrentCategory());
     showModalElement(addModal);
     setTimeout(() => modalName && modalName.focus(), 50);
   }
@@ -1290,9 +1329,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     const isEdit = modalAddBtn && modalAddBtn.dataset.mode === "edit";
     const path = actionPath(isEdit ? "edit" : "add");
+    let targetCategory = null;
+    if (
+      isEdit &&
+      modalCategory &&
+      modalCategoryWrapper &&
+      !modalCategoryWrapper.classList.contains("hidden")
+    ) {
+      targetCategory = modalCategory.value;
+    }
     const body = isEdit
       ? JSON.stringify({
           original_url: modalAddBtn.dataset.origUrl,
+          target_category: targetCategory,
           ...payload,
         })
       : JSON.stringify(payload);
@@ -1349,7 +1398,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     const supportsFree = container?.dataset.supportsFree === "true";
     if (!supportsFree && modalFreeOnly) modalFreeOnly.checked = false;
-    openAddModal(supportsFree);
+    const linkCategory = container?.dataset.category || getCurrentCategory();
+    openAddModal(supportsFree, linkCategory);
   };
 
   resetModalFields();

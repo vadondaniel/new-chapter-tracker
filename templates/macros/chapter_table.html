@@ -1,4 +1,4 @@
-{% macro render_chapter_table(rows, show_found_column=False, show_save_button=False) -%}
+{% macro render_chapter_table(rows, show_found_column=False, show_save_button=False, current_category='main') -%}
 <div class="table-wrapper">
   <table border="1">
     <thead>
@@ -54,6 +54,7 @@
           class="menu-container"
           data-url="{{ url }}"
           data-name="{{ data.name }}"
+          data-category="{{ current_category }}"
           data-update-frequency="{{ data.update_frequency }}"
           data-free-only="{{ 'true' if data.free_only else 'false' }}"
           data-supports-free="{{ 'true' if data.supports_free_toggle else 'false' }}"

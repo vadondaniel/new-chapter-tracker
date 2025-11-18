@@ -250,6 +250,7 @@ def chapter_data():
             rows=view_data["differences"],
             show_found_column=True,
             show_save_button=True,
+            current_category=update_type,
         )
         if view_data["differences"]
         else '<div class="status-box status-success"><i class="fas fa-check-circle"></i><span>All chapters are up to date!</span></div>'
@@ -258,6 +259,7 @@ def chapter_data():
         render_template(
             "partials/chapter_table.html",
             rows=view_data["same_data"],
+            current_category=update_type,
         )
         if view_data["same_data"]
         else '<div class="status-box status-info"><i class="fas fa-info-circle"></i><span>No entries being tracked yet.</span></div>'
@@ -395,6 +397,9 @@ def edit_link(category=None):
     orig_url = data.get("original_url")
     new_url = data.get("url")
     new_name = data.get("name")
+    requested_category = data.get("target_category")
+    valid_categories = set(db.get_category_names())
+    requested_category = requested_category if requested_category in valid_categories else None
 
     update_type = resolve_category(category)
     links = db.get_links(update_type)
@@ -404,12 +409,16 @@ def edit_link(category=None):
     for link in links:
         if normalize(link.get("url", "")) == normalize(orig_url or ""):
             freq, free_only = get_link_metadata(data, link)
+            target_category = (
+                requested_category if requested_category and requested_category != update_type else None
+            )
             db.update_link(
                 orig_url,
                 new_url,
                 new_name,
                 freq,
                 free_only,
+                category=target_category,
             )
             updated = True
             break
