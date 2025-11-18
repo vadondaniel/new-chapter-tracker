@@ -961,6 +961,12 @@ body.backdrop-blur .modal-backdrop {
   flex-wrap: wrap;
 }
 
+/*.settings-helper-text {
+  margin: 8px 0 0;
+  color: var(--muted-color);
+  font-size: 0.9rem;
+}*/
+
 .pill-option {
   display: inline-flex;
   align-items: center;
@@ -1726,6 +1732,10 @@ a:visited {
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.timestamp-tooltiptext.tooltip-hidden {
+  display: none;
 }
 
 .timestamp-text:hover .timestamp-tooltiptext {

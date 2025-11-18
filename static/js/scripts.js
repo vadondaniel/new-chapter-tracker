@@ -7,8 +7,18 @@ let categoryData = Array.isArray(window.initialCategoryData)
   : [];
 const DEFAULT_THEME = "auto";
 const DEFAULT_ACCENT = "emerald";
+const DEFAULT_RELATIVE_TIME = "today";
+const RELATIVE_TIME_KEY = "chapterRelativeTime";
+const RELATIVE_TIME_OPTIONS = ["off", "today", "week", "month", "always"];
 let activeModalCount = 0;
 let categoryReorderQueue = Promise.resolve();
+let currentRelativeTime =
+  (typeof localStorage !== "undefined" &&
+    localStorage.getItem(RELATIVE_TIME_KEY)) ||
+  DEFAULT_RELATIVE_TIME;
+if (!RELATIVE_TIME_OPTIONS.includes(currentRelativeTime)) {
+  currentRelativeTime = DEFAULT_RELATIVE_TIME;
+}
 
 function updateBodyModalState(delta) {
   activeModalCount = Math.max(0, activeModalCount + delta);
@@ -61,6 +71,125 @@ function markActiveAccent(accent) {
     if (!btn) return;
     btn.classList.toggle("active", btn.dataset.accent === accent);
   });
+}
+
+function parseTimestampValue(raw) {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.toLowerCase() === "unknown") return null;
+  let parsed = moment(trimmed, [moment.ISO_8601, "YYYY/MM/DD HH:mm:ss", "YYYY/MM/DD HH:mm", "YYYY/MM/DD"], true);
+  if (!parsed.isValid()) {
+    parsed = moment(new Date(trimmed));
+  }
+  return parsed.isValid() ? parsed : null;
+}
+
+function formatTimestampForPreference(absolute, fallback, mode) {
+  const safeMode = RELATIVE_TIME_OPTIONS.includes(mode)
+    ? mode
+    : DEFAULT_RELATIVE_TIME;
+  const baseLabel = fallback || absolute || "Unknown";
+  const parsed = parseTimestampValue(absolute);
+  const absoluteLabel = absolute || (parsed ? parsed.format("YYYY/MM/DD") : "");
+  if (!parsed) {
+    return {
+      label: safeMode === "off" && absolute ? absolute : baseLabel,
+      isRelative: false,
+      reference: absoluteLabel,
+    };
+  }
+  const now = moment();
+  const diffDays = Math.abs(now.diff(parsed, "days"));
+  const result = {
+    label: baseLabel,
+    isRelative: false,
+    reference: absoluteLabel,
+  };
+  switch (safeMode) {
+    case "off":
+      result.label = absolute || parsed.format("YYYY/MM/DD");
+      break;
+    case "today":
+      if (parsed.isSame(now, "day")) {
+        result.label = "Today";
+        result.isRelative = true;
+        break;
+      }
+      if (parsed.isSame(now.clone().subtract(1, "day"), "day")) {
+        result.label = "Yesterday";
+        result.isRelative = true;
+        break;
+      }
+      result.label = absolute || parsed.format("YYYY/MM/DD");
+      break;
+    case "week":
+      if (diffDays < 7) {
+        result.label = parsed.fromNow();
+        result.isRelative = true;
+      } else {
+        result.label = absolute || parsed.format("YYYY/MM/DD");
+      }
+      break;
+    case "month":
+      if (diffDays < 31) {
+        result.label = parsed.fromNow();
+        result.isRelative = true;
+      } else {
+        result.label = absolute || parsed.format("YYYY/MM/DD");
+      }
+      break;
+    case "always":
+      result.label = parsed.fromNow();
+      result.isRelative = true;
+      break;
+    default:
+      result.label = baseLabel;
+  }
+  return result;
+}
+
+function updateRelativeTimestamps(root = document) {
+  if (!root) return;
+  root.querySelectorAll(".timestamp-text").forEach((container) => {
+    const label = container.querySelector(".timestamp-label");
+    if (!label) return;
+    const absolute = container.dataset.timestamp || container.dataset.absolute || "";
+    const fallback = container.dataset.defaultLabel || label.textContent || "";
+    const { label: display, isRelative, reference } =
+      formatTimestampForPreference(absolute, fallback, currentRelativeTime);
+    label.textContent = display;
+    const tooltip = container.querySelector(".timestamp-tooltiptext");
+    if (!tooltip) return;
+    if (reference) {
+      tooltip.textContent = reference;
+    }
+    const shouldShow = isRelative && Boolean(reference);
+    tooltip.classList.toggle("tooltip-hidden", !shouldShow);
+    tooltip.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+  });
+}
+
+function markActiveRelativeTime(mode) {
+  document
+    .querySelectorAll('input[name="relativeTimeMode"]')
+    .forEach((radio) => {
+      radio.checked = radio.value === mode;
+    });
+}
+
+function applyRelativeTimePreference(mode, options = {}) {
+  const normalized = RELATIVE_TIME_OPTIONS.includes(mode)
+    ? mode
+    : DEFAULT_RELATIVE_TIME;
+  currentRelativeTime = normalized;
+  if (!options.skipPersist) {
+    localStorage.setItem(RELATIVE_TIME_KEY, normalized);
+  }
+  markActiveRelativeTime(normalized);
+  if (!options.skipUpdate) {
+    updateRelativeTimestamps();
+  }
+  return normalized;
 }
 
 function renderCategoryNav(categories = categoryData) {
@@ -598,6 +727,7 @@ function initRowEnhancements(root = document) {
   setupFloatingTooltips(root);
   attachErrorTooltips(root);
   root.querySelectorAll(".menu-toggle").forEach((toggle) => attachMenuToggle(toggle));
+  updateRelativeTimestamps(root);
 }
 
 async function refreshChapterTables() {
@@ -1567,6 +1697,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const categoryAddRowBtn = document.getElementById("categoryAddRowBtn");
   const themeRadios = document.querySelectorAll('input[name="themeMode"]');
   const accentButtons = document.querySelectorAll(".accent-swatch");
+  const relativeTimeRadios = document.querySelectorAll(
+    'input[name="relativeTimeMode"]'
+  );
 
   const storedTheme = localStorage.getItem("chapterTheme") || DEFAULT_THEME;
   const storedAccent = localStorage.getItem("chapterAccent") || DEFAULT_ACCENT;
@@ -1600,6 +1733,10 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
   markActiveAccent(storedAccent);
+  markActiveRelativeTime(currentRelativeTime);
+  relativeTimeRadios.forEach((radio) => {
+    radio.addEventListener("change", () => applyRelativeTimePreference(radio.value));
+  });
 
   function openCategoryModal() {
     refreshCategoriesFromServer().catch(() => renderCategoryManagerList());

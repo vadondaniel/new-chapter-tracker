@@ -294,6 +294,35 @@
         </section>
 
         <section class="settings-section">
+          <h3>Relative Time</h3>
+          <div class="settings-options relative-time-options" role="radiogroup" aria-label="Relative timestamp preference">
+            <label class="pill-option">
+              <input type="radio" name="relativeTimeMode" value="off" />
+              <span>Off</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="relativeTimeMode" value="today" checked />
+              <span>Today / Yesterday</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="relativeTimeMode" value="week" />
+              <span>This Week</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="relativeTimeMode" value="month" />
+              <span>This Month</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="relativeTimeMode" value="always" />
+              <span>Always</span>
+            </label>
+          </div>
+          <!--<p class="settings-helper-text">
+            Controls when "Last Updated" shows relative phrases (e.g., "3 days ago") instead of the recorded date.
+          </p>!-->
+        </section>
+
+        <section class="settings-section">
           <h3>Accent</h3>
           <div class="accent-options" id="accentOptions">
             <button type="button" class="accent-swatch" data-accent="emerald" aria-label="Emerald"></button>

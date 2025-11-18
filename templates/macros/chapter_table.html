@@ -31,9 +31,13 @@
       </td>
       {% endif %}
       <td style="white-space: nowrap; width: 0; text-align: center;">
-        <span class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}">
-          {{ data.timestamp_display }}
-          {% if data.timestamp_display != data.timestamp %}
+        <span
+          class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}"
+          data-timestamp="{{ data.timestamp|default('')|e }}"
+          data-default-label="{{ data.timestamp_display|default('Unknown')|e }}"
+        >
+          <span class="timestamp-label">{{ data.timestamp_display }}</span>
+          {% if data.timestamp %}
           <span class="timestamp-tooltiptext">{{ data.timestamp }}</span>
           {% endif %}
           {% if data.last_error %}
