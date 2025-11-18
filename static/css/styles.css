@@ -333,8 +333,8 @@ td {
 }
 
 /* Row hover effect */
-tr:hover {
-  background-color: var(--accent-overlay);
+tbody tr:hover:not(.favorite-row) {
+  background-color: var(--hover-overlay);
 }
 
 .favorite-row {
