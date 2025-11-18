@@ -8,8 +8,6 @@ DEFAULT_FREE_ONLY = False
 
 _DEFAULT_CATEGORIES = [
     ("main", 1),
-    ("manga", 5),
-    ("novel", 5),
 ]
 
 
