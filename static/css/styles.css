@@ -1134,8 +1134,8 @@ body.backdrop-blur .modal-backdrop {
   background: var(--surface-bg);
 }
 
-.category-table thead {
-  background: var(--accent-overlay);
+.category-table th {
+  background: color-mix(in srgb, var(--accent-color) 12%, var(--surface-bg) 88%);
   color: var(--muted-strong);
   text-transform: uppercase;
   letter-spacing: 0.05em;
