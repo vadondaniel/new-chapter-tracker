@@ -3,7 +3,7 @@ import math
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -506,6 +506,11 @@ def favicon():
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
+
+
+@app.errorhandler(404)
+def handle_404(_error):
+    return redirect(url_for("main_index"))
 
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
