@@ -1247,11 +1247,11 @@ body.backdrop-blur .modal-backdrop {
   min-height: 40px;
 }
 
-.category-table__toggle input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent-color);
+.category-table__toggle .checkbox-field {
   margin: 0;
+  gap: 0;
+  justify-content: center;
+  width: 100%;
 }
 
 .category-table__actions {
@@ -1346,7 +1346,7 @@ input[type="number"]::-webkit-outer-spin-button {
   box-sizing: border-box;
 }
 
-.modal-checkbox {
+.checkbox-field {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1369,13 +1369,13 @@ input[type="number"]::-webkit-outer-spin-button {
   min-width: 160px;
   margin-bottom: 0;
 }
-.modal-checkbox.inline,
+.checkbox-field.inline,
 .modal-checkbox-inline {
   margin-top: 0;
   align-items: center;
 }
 
-.modal-checkbox input[type="checkbox"] {
+.checkbox-field input[type="checkbox"] {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -1383,7 +1383,7 @@ input[type="number"]::-webkit-outer-spin-button {
   pointer-events: none;
 }
 
-.modal-checkbox .custom-checkbox {
+.checkbox-field .custom-checkbox {
   width: 18px;
   height: 18px;
   border: 2px solid var(--checkbox-border);
@@ -1395,7 +1395,7 @@ input[type="number"]::-webkit-outer-spin-button {
   background: var(--surface-bg);
 }
 
-.modal-checkbox .custom-checkbox::after {
+.checkbox-field .custom-checkbox::after {
   content: "";
   width: 6px;
   height: 10px;
@@ -1406,16 +1406,16 @@ input[type="number"]::-webkit-outer-spin-button {
   transition: opacity 0.2s;
 }
 
-.modal-checkbox input[type="checkbox"]:checked + .custom-checkbox {
+.checkbox-field input[type="checkbox"]:checked + .custom-checkbox {
   background: var(--accent-color);
   border-color: var(--accent-color);
 }
 
-.modal-checkbox input[type="checkbox"]:checked + .custom-checkbox::after {
+.checkbox-field input[type="checkbox"]:checked + .custom-checkbox::after {
   opacity: 1;
 }
 
-.modal-checkbox.hidden {
+.checkbox-field.hidden {
   display: none;
 }
 
@@ -1869,4 +1869,15 @@ a:visited {
 .table-wrapper,
 .status-box {
   animation: fadeUp 0.4s ease both;
+}
+.category-checkbox {
+  margin-top: 0;
+  width: 100%;
+  justify-content: center;
+  gap: 0;
+}
+
+.category-checkbox .custom-checkbox {
+  width: 18px;
+  height: 18px;
 }

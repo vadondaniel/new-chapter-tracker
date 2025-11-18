@@ -837,7 +837,12 @@ function buildCategoryRow(cat, isNew) {
     isNew || cat?.include_in_nav === undefined ? true : !!cat.include_in_nav;
   includeInput.className = "category-input-include";
   includeInput.setAttribute("aria-label", "Show in navigation");
+  includeWrapper.className = "checkbox-field category-checkbox";
+  const includeIndicator = document.createElement("span");
+  includeIndicator.className = "custom-checkbox";
+  includeIndicator.setAttribute("aria-hidden", "true");
   includeWrapper.appendChild(includeInput);
+  includeWrapper.appendChild(includeIndicator);
   includeCell.appendChild(includeWrapper);
 
   const actionsCell = document.createElement("td");
