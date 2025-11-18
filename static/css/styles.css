@@ -744,6 +744,17 @@ body.backdrop-blur .modal-backdrop {
   color: var(--input-text);
 }
 
+.modal-body input[type="number"] {
+  -webkit-appearance: textfield;
+     -moz-appearance: textfield;
+          appearance: textfield;
+}
+
+.modal-body input[type="number"]::-webkit-inner-spin-button,
+.modal-body input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
 .modal-body input::placeholder,
 .modal-body textarea::placeholder {
   color: var(--input-placeholder);
