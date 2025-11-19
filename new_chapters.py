@@ -85,6 +85,26 @@ def build_nav_context():
     return categories
 
 
+def get_current_nav_info(nav_categories, current_category, fallback_count):
+    for nav in nav_categories:
+        if nav["name"] == current_category:
+            return nav
+    category_info = db.get_category(current_category)
+    display_name = None
+    include_in_nav = False
+    if category_info:
+        display_name = category_info.get("display_name")
+        include_in_nav = bool(category_info.get("include_in_nav"))
+    if not display_name:
+        display_name = current_category.replace("_", " ").title()
+    return {
+        "name": current_category,
+        "display_name": display_name,
+        "include_in_nav": include_in_nav,
+        "unsaved_count": fallback_count,
+    }
+
+
 def parse_free_only(value, default):
     if isinstance(value, bool):
         return value
@@ -223,6 +243,9 @@ def index(category=None):
     view_data = build_view_data(update_type)
 
     nav_categories = build_nav_context()
+    current_nav = get_current_nav_info(
+        nav_categories, update_type, len(view_data["differences"])
+    )
 
     logging.info(f"Last full update ({update_type}): {view_data['last_full_update']}")
     return render_template(
@@ -232,6 +255,7 @@ def index(category=None):
         update_in_progress=update_in_progress,
         last_full_update=view_data["last_full_update"],
         current_category=update_type,
+        current_nav_info=current_nav,
         asset_version=ASSET_VERSION,
         nav_categories=nav_categories,
     )
@@ -243,6 +267,9 @@ def chapter_data():
     update_type = resolve_category(category)
     view_data = build_view_data(update_type)
     nav_categories = build_nav_context()
+    current_nav = get_current_nav_info(
+        nav_categories, update_type, len(view_data["differences"])
+    )
 
     differences_html = (
         render_template(
@@ -270,7 +297,7 @@ def chapter_data():
             "differences": {"count": len(view_data["differences"]), "html": differences_html},
             "same_data": {"count": len(view_data["same_data"]), "html": same_html},
             "last_full_update": view_data["last_full_update"],
-            "nav": {"categories": nav_categories},
+            "nav": {"categories": nav_categories, "current": current_nav},
         }
     )
 

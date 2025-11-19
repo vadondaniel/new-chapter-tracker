@@ -44,6 +44,7 @@
     <script>
       var update_in_progress = {{ update_in_progress|tojson }};
       window.initialCategoryData = {{ nav_categories|tojson }};
+      window.currentNavInfo = {{ current_nav_info|tojson }};
     </script>
     <script defer src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <link
@@ -102,6 +103,7 @@
     {% from "macros/chapter_table.html" import render_chapter_table %}
     <div class="layout-shell">
       <nav class="category-nav" id="categoryNav" aria-label="Tracked categories">
+        {% set nav_data = current_nav_info %}
         <div class="category-nav__list" id="categoryNavList">
           {% for nav in nav_categories if nav.include_in_nav %}
             {% set nav_url = url_for('main_index') if nav.name == 'main' else url_for('category_index', category=nav.name) %}
@@ -114,6 +116,23 @@
               <span class="category-nav__count" id="navCount-{{ nav.name }}">{{ nav.unsaved_count }}</span>
             </a>
           {% endfor %}
+          {% if nav_data and not nav_data.include_in_nav %}
+            {% set nav_url = url_for('main_index') if current_category == 'main' else url_for('category_index', category=current_category) %}
+            {% set nav_label = nav_data.display_name or current_category|replace('_', ' ')|title %}
+            {% set nav_count = nav_data.unsaved_count if nav_data.unsaved_count is not none else differences|length %}
+            <a
+              href="{{ nav_url }}"
+              class="category-nav__item active"
+              data-category="{{ current_category }}"
+            >
+              <span class="category-nav__label">
+                {{ nav_label }}
+              </span>
+              <span class="category-nav__count" id="navCount-{{ current_category }}">
+                {{ nav_count }}
+              </span>
+            </a>
+          {% endif %}
         </div>
         <button type="button" id="openSettingsBtn" class="category-nav__item category-nav__item--settings">
           <i class="fas fa-cog"></i>

@@ -5,6 +5,7 @@ let historyContext = null;
 let categoryData = Array.isArray(window.initialCategoryData)
   ? window.initialCategoryData
   : [];
+window.currentNavInfo = window.currentNavInfo || null;
 const DEFAULT_THEME = "auto";
 const DEFAULT_ACCENT = "emerald";
 const DEFAULT_RELATIVE_TIME = "today";
@@ -199,6 +200,18 @@ function renderCategoryNav(categories = categoryData) {
   }
   categoryData = categories;
   const current = getCurrentCategory();
+  const visibleCategories = categories.filter((cat) => cat && cat.include_in_nav);
+  const hasCurrentVisible = visibleCategories.some((cat) => cat?.name === current);
+  const fallbackInfo =
+    window.currentNavInfo && window.currentNavInfo.name === current
+      ? window.currentNavInfo
+      : null;
+  const renderList = hasCurrentVisible
+    ? visibleCategories
+    : [
+        ...visibleCategories,
+        ...(fallbackInfo ? [{ ...fallbackInfo, include_in_nav: true }] : []),
+      ];
   const existingLinks = new Map(
     Array.from(list.querySelectorAll(".category-nav__item[data-category]")).map((link) => [
       link.dataset.category,
@@ -208,8 +221,7 @@ function renderCategoryNav(categories = categoryData) {
   const renderedNames = new Set();
   let insertIndex = 0;
 
-  categories
-    .filter((cat) => cat && cat.include_in_nav)
+  renderList
     .forEach((cat) => {
       const name = cat.name;
       if (!name) return;
@@ -754,6 +766,9 @@ async function refreshChapterTables() {
     initRowEnhancements(sameContent);
   }
   if (payload.nav && Array.isArray(payload.nav.categories)) {
+    if (payload.nav.current) {
+      window.currentNavInfo = payload.nav.current;
+    }
     renderCategoryNav(payload.nav.categories);
   }
   updateLastUpdateTooltip(payload.last_full_update);
