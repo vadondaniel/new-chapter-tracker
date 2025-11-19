@@ -1,4 +1,5 @@
 {% macro render_chapter_table(rows, show_found_column=False, show_save_button=False, current_category='main') -%}
+{% set saved_label = 'Last Saved Chapter' if show_found_column else 'Last Chapter' %}
 <div class="table-wrapper">
   <table border="1">
     <thead>
@@ -16,7 +17,7 @@
     </thead>
     {% for url, data in rows.items() %}
     <tr class="{% if data.favorite %}favorite-row{% endif %}">
-      <td>
+      <td data-label="Name">
         <div class="table-tooltip">
           <a href="{{ url }}" target="_blank" class="domain-tooltip">
             {{ data.name }}
@@ -24,13 +25,13 @@
           <span class="tooltiptext"></span>
         </div>
       </td>
-      <td>{{ data.last_saved }}</td>
+      <td data-label="{{ saved_label }}">{{ data.last_saved }}</td>
       {% if show_found_column %}
-      <td style="font-weight: 600;">
+      <td style="font-weight: 600;" data-label="Last Found Chapter">
         {{ data.last_found }}
       </td>
       {% endif %}
-      <td style="white-space: nowrap; width: 0; text-align: center;">
+      <td style="white-space: nowrap; width: auto; text-align: center;" data-label="Last Updated">
         <span
           class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}"
           data-timestamp="{{ data.timestamp|default('')|e }}"
@@ -45,63 +46,65 @@
           {% endif %}
         </span>
       </td>
-      <td style="white-space: nowrap; width: 0">
-        {% if show_save_button %}
-        <div class="table-tooltip">
-          <button onclick="updateChapter('{{ url }}')">
-            <i class="fas fa-save"></i>
-          </button>
-          <span class="tooltiptext">Save</span>
-        </div>
-        {% endif %}
-        <div
-          class="menu-container"
-          data-url="{{ url }}"
-          data-name="{{ data.name }}"
-          data-category="{{ current_category }}"
-          data-update-frequency="{{ data.update_frequency }}"
-          data-free-only="{{ 'true' if data.free_only else 'false' }}"
-          data-supports-free="{{ 'true' if data.supports_free_toggle else 'false' }}"
-          data-favorite="{{ 'true' if data.favorite else 'false' }}"
-        >
-          <button
-            class="menu-toggle"
-            aria-haspopup="true"
-            aria-expanded="false"
+      <td style="white-space: nowrap; width: auto" data-label="Actions">
+        <div class="actions-grid">
+          {% if show_save_button %}
+          <div class="table-tooltip">
+            <button onclick="updateChapter('{{ url }}')">
+              <i class="fas fa-save"></i>
+            </button>
+            <span class="tooltiptext">Save</span>
+          </div>
+          {% endif %}
+          <div
+            class="menu-container"
+            data-url="{{ url }}"
+            data-name="{{ data.name }}"
+            data-category="{{ current_category }}"
+            data-update-frequency="{{ data.update_frequency }}"
+            data-free-only="{{ 'true' if data.free_only else 'false' }}"
+            data-supports-free="{{ 'true' if data.supports_free_toggle else 'false' }}"
+            data-favorite="{{ 'true' if data.favorite else 'false' }}"
           >
-            <i class="fas fa-ellipsis-h"></i>
-          </button>
+            <button
+              class="menu-toggle"
+              aria-haspopup="true"
+              aria-expanded="false"
+            >
+              <i class="fas fa-ellipsis-h"></i>
+            </button>
 
-          <div class="menu-actions" aria-hidden="true">
-            <div class="table-tooltip">
-              <button class="edit">
-                <i class="fas fa-edit"></i>
-              </button>
-              <span class="tooltiptext">Edit</span>
-            </div>
-            <div class="table-tooltip">
-              <button class="favorite{% if data.favorite %} favorited{% endif %}">
-                <i class="{% if data.favorite %}fas{% else %}far{% endif %} fa-star"></i>
-              </button>
-              <span class="tooltiptext">Favorite</span>
-            </div>
-            <div class="table-tooltip">
-              <button class="recheck">
-                <i class="fas fa-sync-alt"></i>
-              </button>
-              <span class="tooltiptext">Recheck</span>
-            </div>
-            <div class="table-tooltip">
-              <button class="history">
-                <i class="fas fa-history"></i>
-              </button>
-              <span class="tooltiptext">History</span>
-            </div>
-            <div class="table-tooltip">
-              <button class="danger">
-                <i class="fas fa-trash"></i>
-              </button>
-              <span class="tooltiptext">Delete</span>
+            <div class="menu-actions" aria-hidden="true">
+              <div class="table-tooltip">
+                <button class="edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <span class="tooltiptext">Edit</span>
+              </div>
+              <div class="table-tooltip">
+                <button class="favorite{% if data.favorite %} favorited{% endif %}">
+                  <i class="{% if data.favorite %}fas{% else %}far{% endif %} fa-star"></i>
+                </button>
+                <span class="tooltiptext">Favorite</span>
+              </div>
+              <div class="table-tooltip">
+                <button class="recheck">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+                <span class="tooltiptext">Recheck</span>
+              </div>
+              <div class="table-tooltip">
+                <button class="history">
+                  <i class="fas fa-history"></i>
+                </button>
+                <span class="tooltiptext">History</span>
+              </div>
+              <div class="table-tooltip">
+                <button class="danger">
+                  <i class="fas fa-trash"></i>
+                </button>
+                <span class="tooltiptext">Delete</span>
+              </div>
             </div>
           </div>
         </div>
