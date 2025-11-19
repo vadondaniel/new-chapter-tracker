@@ -25,27 +25,54 @@
   --info-pill-bg: #e2e8f0;
   --pill-bg: color-mix(in srgb, var(--accent-color) 5%, #fff 95%);
   --pill-text: var(--accent-color-strong);
-  --pill-border: color-mix(in srgb, var(--accent-color) 45%, rgba(0, 0, 0, 0.2) 55%);
+  --pill-border: color-mix(
+    in srgb,
+    var(--accent-color) 45%,
+    rgba(0, 0, 0, 0.2) 55%
+  );
   --history-highlight-bg: color-mix(in srgb, var(--accent-color) 15%, #fff 85%);
   --status-message-bg: rgba(255, 255, 255, 0.95);
   --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.15);
 
   /* Accent palette */
   --accent-color: #2ecc71;
-  --accent-color-hover: color-mix(in srgb, var(--accent-color) 85%, #0b111d 15%);
-  --accent-color-strong: color-mix(in srgb, var(--accent-color) 70%, #0b111d 30%);
-  --accent-overlay: color-mix(in srgb, var(--accent-color) 10%, transparent 90%);
-  --accent-overlay-strong: color-mix(in srgb, var(--accent-color) 20%, transparent 80%);
-  --accent-shadow: 0 6px 18px color-mix(in srgb, var(--accent-color) 55%, rgba(0, 0, 0, 0.8) 45%);
-  --accent-shadow-strong: 0 10px 22px color-mix(in srgb, var(--accent-color) 45%, rgba(0, 0, 0, 0.9) 55%);
-  --accent-shadow-deep: color-mix(in srgb, var(--accent-color) 40%, rgba(0, 0, 0, 0.9) 60%);
+  --accent-color-hover: color-mix(
+    in srgb,
+    var(--accent-color) 85%,
+    #0b111d 15%
+  );
+  --accent-color-strong: color-mix(
+    in srgb,
+    var(--accent-color) 70%,
+    #0b111d 30%
+  );
+  --accent-overlay: color-mix(
+    in srgb,
+    var(--accent-color) 10%,
+    transparent 90%
+  );
+  --accent-overlay-strong: color-mix(
+    in srgb,
+    var(--accent-color) 20%,
+    transparent 80%
+  );
+  --accent-shadow: 0 6px 18px
+    color-mix(in srgb, var(--accent-color) 55%, rgba(0, 0, 0, 0.8) 45%);
+  --accent-shadow-strong: 0 10px 22px
+    color-mix(in srgb, var(--accent-color) 45%, rgba(0, 0, 0, 0.9) 55%);
+  --accent-shadow-deep: color-mix(
+    in srgb,
+    var(--accent-color) 40%,
+    rgba(0, 0, 0, 0.9) 60%
+  );
   --on-accent: #fff;
 
   /* Link states */
   --link-color: var(--accent-color);
   --link-color-hover: var(--accent-color-hover);
   --link-color-active: color-mix(in srgb, var(--accent-color) 65%, #0b111d 35%);
-  --link-shadow: 0 0 2px color-mix(in srgb, var(--accent-color) 25%, rgba(0, 0, 0, 0.1) 75%);
+  --link-shadow: 0 0 2px
+    color-mix(in srgb, var(--accent-color) 25%, rgba(0, 0, 0, 0.1) 75%);
 
   /* Feedback colors */
   --success-color: #166534;
@@ -126,18 +153,43 @@
   --info-pill-bg: rgba(15, 23, 42, 0.4);
   --pill-bg: color-mix(in srgb, var(--accent-color) 5%, #111827 95%);
   --pill-text: var(--accent-color);
-  --pill-border: color-mix(in srgb, var(--accent-color) 55%, rgba(255, 255, 255, 0.2) 45%);
-  --history-highlight-bg: color-mix(in srgb, var(--accent-color) 15%, #111827 85%);
+  --pill-border: color-mix(
+    in srgb,
+    var(--accent-color) 55%,
+    rgba(255, 255, 255, 0.2) 45%
+  );
+  --history-highlight-bg: color-mix(
+    in srgb,
+    var(--accent-color) 15%,
+    #111827 85%
+  );
   --status-message-bg: rgba(15, 23, 42, 0.85);
   --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.8);
 
   /* Accent seed + links */
-  --accent-color-hover: color-mix(in srgb, var(--accent-color) 85%, #0f172a 15%);
-  --accent-color-strong: color-mix(in srgb, var(--accent-color) 70%, #0f172a 30%);
-  --accent-overlay: color-mix(in srgb, var(--accent-color) 10%, transparent 90%);
-  --accent-overlay-strong: color-mix(in srgb, var(--accent-color) 20%, transparent 80%);
+  --accent-color-hover: color-mix(
+    in srgb,
+    var(--accent-color) 85%,
+    #0f172a 15%
+  );
+  --accent-color-strong: color-mix(
+    in srgb,
+    var(--accent-color) 70%,
+    #0f172a 30%
+  );
+  --accent-overlay: color-mix(
+    in srgb,
+    var(--accent-color) 10%,
+    transparent 90%
+  );
+  --accent-overlay-strong: color-mix(
+    in srgb,
+    var(--accent-color) 20%,
+    transparent 80%
+  );
   --link-color-active: color-mix(in srgb, var(--accent-color) 80%, #0f172a 20%);
-  --link-shadow: 0 0 2px color-mix(in srgb, var(--accent-color) 25%, rgba(0, 0, 0, 0.4) 75%);
+  --link-shadow: 0 0 2px
+    color-mix(in srgb, var(--accent-color) 25%, rgba(0, 0, 0, 0.4) 75%);
 
   /* Feedback colors */
   --success-color: #4ade80;
@@ -191,18 +243,47 @@
     --info-pill-bg: rgba(15, 23, 42, 0.4);
     --pill-bg: color-mix(in srgb, var(--accent-color) 5%, #111827 95%);
     --pill-text: var(--accent-color);
-    --pill-border: color-mix(in srgb, var(--accent-color) 55%, rgba(255, 255, 255, 0.2) 45%);
-    --history-highlight-bg: color-mix(in srgb, var(--accent-color) 15%, #111827 85%);
+    --pill-border: color-mix(
+      in srgb,
+      var(--accent-color) 55%,
+      rgba(255, 255, 255, 0.2) 45%
+    );
+    --history-highlight-bg: color-mix(
+      in srgb,
+      var(--accent-color) 15%,
+      #111827 85%
+    );
     --status-message-bg: rgba(15, 23, 42, 0.85);
     --status-message-shadow: 0px 2px 8px rgba(0, 0, 0, 0.8);
 
     /* Accent seed + links */
-    --accent-color-hover: color-mix(in srgb, var(--accent-color) 85%, #0f172a 15%);
-    --accent-color-strong: color-mix(in srgb, var(--accent-color) 70%, #0f172a 30%);
-    --accent-overlay: color-mix(in srgb, var(--accent-color) 10%, transparent 90%);
-    --accent-overlay-strong: color-mix(in srgb, var(--accent-color) 20%, transparent 80%);
-    --link-color-active: color-mix(in srgb, var(--accent-color) 80%, #0f172a 20%);
-    --link-shadow: 0 0 2px color-mix(in srgb, var(--accent-color) 25%, rgba(0, 0, 0, 0.4) 75%);
+    --accent-color-hover: color-mix(
+      in srgb,
+      var(--accent-color) 85%,
+      #0f172a 15%
+    );
+    --accent-color-strong: color-mix(
+      in srgb,
+      var(--accent-color) 70%,
+      #0f172a 30%
+    );
+    --accent-overlay: color-mix(
+      in srgb,
+      var(--accent-color) 10%,
+      transparent 90%
+    );
+    --accent-overlay-strong: color-mix(
+      in srgb,
+      var(--accent-color) 20%,
+      transparent 80%
+    );
+    --link-color-active: color-mix(
+      in srgb,
+      var(--accent-color) 80%,
+      #0f172a 20%
+    );
+    --link-shadow: 0 0 2px
+      color-mix(in srgb, var(--accent-color) 25%, rgba(0, 0, 0, 0.4) 75%);
 
     /* Feedback colors */
     --success-color: #4ade80;
@@ -293,7 +374,8 @@ body {
   font-weight: 600;
   color: var(--text-color);
   text-decoration: none;
-  transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease, color 0s;
+  transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease,
+    color 0s;
 }
 
 .category-nav__list .category-nav__item,
@@ -458,7 +540,9 @@ table {
 }
 
 /* Remove existing table border */
-table, th, td {
+table,
+th,
+td {
   border: none;
 }
 
@@ -526,8 +610,9 @@ td[style*="white-space: nowrap"] {
     border-radius: 8px;
     margin: 12px 0;
   }
-  
-  th, td {
+
+  th,
+  td {
     padding: 12px;
   }
 }
@@ -766,7 +851,11 @@ button.danger:hover {
   cursor: pointer;
 }
 .history-entry.is-clickable:hover {
-  background: color-mix(in srgb, var(--accent-color) 12%, var(--surface-bg) 88%);
+  background: color-mix(
+    in srgb,
+    var(--accent-color) 12%,
+    var(--surface-bg) 88%
+  );
   border-color: var(--accent-color);
 }
 .history-entry__content {
@@ -848,7 +937,11 @@ button.danger:hover {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--overlay-backdrop) 80%, rgba(0, 0, 0, 0.3) 20%);
+  background: color-mix(
+    in srgb,
+    var(--overlay-backdrop) 80%,
+    rgba(0, 0, 0, 0.3) 20%
+  );
   box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.25);
   z-index: 900;
 }
@@ -1084,7 +1177,11 @@ body.backdrop-blur .modal-backdrop {
 }
 
 .category-table th {
-  background: color-mix(in srgb, var(--accent-color) 12%, var(--surface-bg) 88%);
+  background: color-mix(
+    in srgb,
+    var(--accent-color) 12%,
+    var(--surface-bg) 88%
+  );
   color: var(--muted-strong);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1156,7 +1253,8 @@ body.backdrop-blur .modal-backdrop {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .category-move-btn:hover:not(:disabled) {
@@ -1272,8 +1370,8 @@ body.backdrop-blur .modal-backdrop {
 
 input[type="number"] {
   -webkit-appearance: textfield;
-     -moz-appearance: textfield;
-          appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -1463,7 +1561,11 @@ input[type="number"]::-webkit-outer-spin-button {
   left: 0;
   width: 100%;
   height: 100%;
-  background: color-mix(in srgb, var(--overlay-backdrop) 60%, rgba(0, 0, 0, 0.45) 40%);
+  background: color-mix(
+    in srgb,
+    var(--overlay-backdrop) 60%,
+    rgba(0, 0, 0, 0.45) 40%
+  );
   box-shadow: inset 0 0 160px rgba(0, 0, 0, 0.35);
   z-index: 1000;
   display: flex;
@@ -2071,7 +2173,11 @@ a:visited {
   }
 
   .table-wrapper tr.favorite-row {
-    border-color: color-mix(in srgb, var(--accent-color) 45%, var(--border-soft) 55%);
+    border-color: color-mix(
+      in srgb,
+      var(--accent-color) 45%,
+      var(--border-soft) 55%
+    );
     background: var(--accent-overlay);
   }
 

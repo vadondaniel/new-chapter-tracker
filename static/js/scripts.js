@@ -78,7 +78,11 @@ function parseTimestampValue(raw) {
   if (!raw) return null;
   const trimmed = raw.trim();
   if (!trimmed || trimmed.toLowerCase() === "unknown") return null;
-  let parsed = moment(trimmed, [moment.ISO_8601, "YYYY/MM/DD HH:mm:ss", "YYYY/MM/DD HH:mm", "YYYY/MM/DD"], true);
+  let parsed = moment(
+    trimmed,
+    [moment.ISO_8601, "YYYY/MM/DD HH:mm:ss", "YYYY/MM/DD HH:mm", "YYYY/MM/DD"],
+    true
+  );
   if (!parsed.isValid()) {
     parsed = moment(new Date(trimmed));
   }
@@ -154,10 +158,14 @@ function updateRelativeTimestamps(root = document) {
   root.querySelectorAll(".timestamp-text").forEach((container) => {
     const label = container.querySelector(".timestamp-label");
     if (!label) return;
-    const absolute = container.dataset.timestamp || container.dataset.absolute || "";
+    const absolute =
+      container.dataset.timestamp || container.dataset.absolute || "";
     const fallback = container.dataset.defaultLabel || label.textContent || "";
-    const { label: display, isRelative, reference } =
-      formatTimestampForPreference(absolute, fallback, currentRelativeTime);
+    const {
+      label: display,
+      isRelative,
+      reference,
+    } = formatTimestampForPreference(absolute, fallback, currentRelativeTime);
     label.textContent = display;
     const tooltip = container.querySelector(".timestamp-tooltiptext");
     if (!tooltip) return;
@@ -200,8 +208,12 @@ function renderCategoryNav(categories = categoryData) {
   }
   categoryData = categories;
   const current = getCurrentCategory();
-  const visibleCategories = categories.filter((cat) => cat && cat.include_in_nav);
-  const hasCurrentVisible = visibleCategories.some((cat) => cat?.name === current);
+  const visibleCategories = categories.filter(
+    (cat) => cat && cat.include_in_nav
+  );
+  const hasCurrentVisible = visibleCategories.some(
+    (cat) => cat?.name === current
+  );
   const fallbackInfo =
     window.currentNavInfo && window.currentNavInfo.name === current
       ? window.currentNavInfo
@@ -213,65 +225,63 @@ function renderCategoryNav(categories = categoryData) {
         ...(fallbackInfo ? [{ ...fallbackInfo, include_in_nav: true }] : []),
       ];
   const existingLinks = new Map(
-    Array.from(list.querySelectorAll(".category-nav__item[data-category]")).map((link) => [
-      link.dataset.category,
-      link,
-    ])
+    Array.from(list.querySelectorAll(".category-nav__item[data-category]")).map(
+      (link) => [link.dataset.category, link]
+    )
   );
   const renderedNames = new Set();
   let insertIndex = 0;
 
-  renderList
-    .forEach((cat) => {
-      const name = cat.name;
-      if (!name) return;
-      renderedNames.add(name);
+  renderList.forEach((cat) => {
+    const name = cat.name;
+    if (!name) return;
+    renderedNames.add(name);
 
-      let link = existingLinks.get(name);
-      if (!link) {
-        link = document.createElement("a");
-        link.className = "category-nav__item";
-        link.dataset.category = name;
+    let link = existingLinks.get(name);
+    if (!link) {
+      link = document.createElement("a");
+      link.className = "category-nav__item";
+      link.dataset.category = name;
 
-        const newLabel = document.createElement("span");
-        newLabel.className = "category-nav__label";
-        link.appendChild(newLabel);
+      const newLabel = document.createElement("span");
+      newLabel.className = "category-nav__label";
+      link.appendChild(newLabel);
 
-        const newCount = document.createElement("span");
-        newCount.className = "category-nav__count";
-        link.appendChild(newCount);
+      const newCount = document.createElement("span");
+      newCount.className = "category-nav__count";
+      link.appendChild(newCount);
 
-        list.appendChild(link);
-      }
+      list.appendChild(link);
+    }
 
-      const targetUrl = name === "main" ? "/" : `/${name}`;
-      link.href = targetUrl;
-      link.classList.toggle("active", name === current);
+    const targetUrl = name === "main" ? "/" : `/${name}`;
+    link.href = targetUrl;
+    link.classList.toggle("active", name === current);
 
-      let label = link.querySelector(".category-nav__label");
-      if (!label) {
-        label = document.createElement("span");
-        label.className = "category-nav__label";
-        link.insertBefore(label, link.firstChild);
-      }
-      label.textContent = cat.display_name || name;
+    let label = link.querySelector(".category-nav__label");
+    if (!label) {
+      label = document.createElement("span");
+      label.className = "category-nav__label";
+      link.insertBefore(label, link.firstChild);
+    }
+    label.textContent = cat.display_name || name;
 
-      let count = link.querySelector(".category-nav__count");
-      if (!count) {
-        count = document.createElement("span");
-        count.className = "category-nav__count";
-        link.appendChild(count);
-      }
-      count.id = `navCount-${name}`;
-      count.textContent = cat.unsaved_count ?? 0;
+    let count = link.querySelector(".category-nav__count");
+    if (!count) {
+      count = document.createElement("span");
+      count.className = "category-nav__count";
+      link.appendChild(count);
+    }
+    count.id = `navCount-${name}`;
+    count.textContent = cat.unsaved_count ?? 0;
 
-      // Keep DOM order in sync without removing nodes unnecessarily
-      const targetNode = list.children[insertIndex];
-      if (targetNode !== link) {
-        list.insertBefore(link, targetNode ?? null);
-      }
-      insertIndex += 1;
-    });
+    // Keep DOM order in sync without removing nodes unnecessarily
+    const targetNode = list.children[insertIndex];
+    if (targetNode !== link) {
+      list.insertBefore(link, targetNode ?? null);
+    }
+    insertIndex += 1;
+  });
 
   existingLinks.forEach((link, name) => {
     if (!renderedNames.has(name)) {
@@ -286,9 +296,7 @@ function setPrefixesFromCategories(categories) {
         .map((c) => (typeof c === "string" ? c : c.name))
         .filter(Boolean)
     : [];
-  PREFIXES = names
-    .filter((name) => name !== "main")
-    .map((name) => `/${name}`);
+  PREFIXES = names.filter((name) => name !== "main").map((name) => `/${name}`);
 }
 
 const initialThemeChoice =
@@ -520,7 +528,8 @@ function updateLastUpdateTooltip(value) {
     return;
   }
   const relativeTime = moment(value).fromNow();
-  tooltip.textContent = relativeTime === "Invalid date" ? "Never" : relativeTime;
+  tooltip.textContent =
+    relativeTime === "Invalid date" ? "Never" : relativeTime;
 }
 
 function setupDomainTooltips(root = document) {
@@ -532,7 +541,8 @@ function setupDomainTooltips(root = document) {
       if (hostname.startsWith("www.")) hostname = hostname.slice(4);
       link.parentElement.querySelector(".tooltiptext").textContent = hostname;
     } catch (e) {
-      link.parentElement.querySelector(".tooltiptext").textContent = "Invalid URL";
+      link.parentElement.querySelector(".tooltiptext").textContent =
+        "Invalid URL";
     }
   });
 }
@@ -613,10 +623,7 @@ const attachErrorTooltip = (trigger) => {
     let left = rect.left + window.scrollX + rect.width / 2 - fRect.width / 2;
     const pad = 8;
     const maxLeft =
-      window.scrollX +
-      document.documentElement.clientWidth -
-      fRect.width -
-      pad;
+      window.scrollX + document.documentElement.clientWidth - fRect.width - pad;
     left = Math.max(window.scrollX + pad, Math.min(left, maxLeft));
 
     if (top < window.scrollY + pad) {
@@ -664,7 +671,9 @@ function attachMenuToggle(toggle) {
   toggle.addEventListener("click", function (e) {
     e.stopPropagation();
 
-    document.querySelectorAll(".menu-actions.active").forEach((m) => m.remove());
+    document
+      .querySelectorAll(".menu-actions.active")
+      .forEach((m) => m.remove());
 
     const container = this.closest(".menu-container");
     const url = container.dataset.url;
@@ -738,7 +747,9 @@ function initRowEnhancements(root = document) {
   setupDomainTooltips(root);
   setupFloatingTooltips(root);
   attachErrorTooltips(root);
-  root.querySelectorAll(".menu-toggle").forEach((toggle) => attachMenuToggle(toggle));
+  root
+    .querySelectorAll(".menu-toggle")
+    .forEach((toggle) => attachMenuToggle(toggle));
   updateRelativeTimestamps(root);
 }
 
@@ -804,7 +815,9 @@ function updateCategoryReorderControls() {
   const container = document.getElementById("categoryManagerList");
   if (!container) return;
   container
-    .querySelectorAll('.category-table__row[data-mode="new"] .category-move-btn')
+    .querySelectorAll(
+      '.category-table__row[data-mode="new"] .category-move-btn'
+    )
     .forEach((btn) => {
       btn.disabled = true;
     });
@@ -913,9 +926,7 @@ function buildCategoryRow(cat, isNew) {
   row.dataset.mode = isNew ? "new" : "existing";
   row.dataset.originalName = cat?.name || "";
   row.dataset.originalDisplay = cat?.display_name || "";
-  row.dataset.originalInterval = String(
-    cat?.update_interval_hours || 1
-  );
+  row.dataset.originalInterval = String(cat?.update_interval_hours || 1);
   row.dataset.originalInclude = String(
     cat?.include_in_nav === undefined ? true : !!cat.include_in_nav
   );
@@ -1011,12 +1022,9 @@ function buildCategoryRow(cat, isNew) {
   saveBtn.addEventListener("click", () => saveCategoryRow(row));
   deleteBtn.addEventListener("click", () => deleteCategoryRow(row));
 
-  const inputs = [
-    slugInput,
-    displayInput,
-    intervalInput,
-    includeInput,
-  ].filter(Boolean);
+  const inputs = [slugInput, displayInput, intervalInput, includeInput].filter(
+    Boolean
+  );
   inputs.forEach((input) => {
     input.addEventListener("input", () => {
       saveBtn.disabled = !hasRowChanged(row);
@@ -1040,9 +1048,7 @@ function buildCategoryRow(cat, isNew) {
 
 async function saveCategoryRow(row) {
   const slug = row.querySelector(".category-input-slug")?.value.trim() || "";
-  const display = row
-    .querySelector(".category-input-display")
-    ?.value.trim();
+  const display = row.querySelector(".category-input-display")?.value.trim();
   const intervalValue =
     row.querySelector(".category-input-interval")?.value.trim() || "1";
   const includeFlag = row.querySelector(".category-input-include")?.checked;
@@ -1150,7 +1156,9 @@ function openHistoryModal(data, supportsFree) {
   if (lastAttempt) lastAttempt.textContent = formatDateTime(data.last_attempt);
   if (freqPill)
     freqPill.textContent = data.update_frequency
-      ? `Every ${data.update_frequency} day${data.update_frequency === 1 ? "" : "s"}`
+      ? `Every ${data.update_frequency} day${
+          data.update_frequency === 1 ? "" : "s"
+        }`
       : "Frequency unknown";
   if (freePill) {
     if (supportsFree) {
@@ -1186,7 +1194,9 @@ function openHistoryModal(data, supportsFree) {
         const timestampEl = document.createElement("span");
         timestampEl.textContent = entry.timestamp || "Date unknown";
         const retrievedEl = document.createElement("span");
-        retrievedEl.textContent = `Fetched: ${formatDateTime(entry.retrieved_at)}`;
+        retrievedEl.textContent = `Fetched: ${formatDateTime(
+          entry.retrieved_at
+        )}`;
         metaEl.appendChild(timestampEl);
         metaEl.appendChild(retrievedEl);
 
@@ -1200,15 +1210,14 @@ function openHistoryModal(data, supportsFree) {
         const deleteWrapper = document.createElement("div");
         deleteWrapper.className = "table-tooltip";
         const deleteBtn = document.createElement("button");
-        deleteBtn.className = "history-entry__action history-entry__action--delete";
+        deleteBtn.className =
+          "history-entry__action history-entry__action--delete";
         const tooltip = document.createElement("span");
         tooltip.className = "tooltiptext";
         const locked = entry.is_latest || isCurrent;
         if (locked) {
           deleteBtn.innerHTML = '<i class="fas fa-lock"></i>';
-          tooltip.textContent = entry.is_latest
-            ? "Latest"
-            : "Saved";
+          tooltip.textContent = entry.is_latest ? "Latest" : "Saved";
         } else {
           deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
           tooltip.textContent = "Delete";
@@ -1234,7 +1243,9 @@ function openHistoryModal(data, supportsFree) {
         entryEl.dataset.entryId = entry.entry_id || "";
         entryEl.classList.toggle("is-clickable", !isCurrent);
         if (!isCurrent) {
-          entryEl.addEventListener("click", () => saveHistoryEntry(entry.entry_id));
+          entryEl.addEventListener("click", () =>
+            saveHistoryEntry(entry.entry_id)
+          );
         } else {
           entryEl.removeAttribute("title");
         }
@@ -1373,11 +1384,7 @@ function readSectionStates() {
 }
 
 function persistSectionState(sectionId, collapsed) {
-  if (
-    !sectionId ||
-    typeof window === "undefined" ||
-    !window.localStorage
-  ) {
+  if (!sectionId || typeof window === "undefined" || !window.localStorage) {
     return;
   }
   try {
@@ -1390,7 +1397,12 @@ function persistSectionState(sectionId, collapsed) {
   }
 }
 
-function applyCollapseState(header, content, collapsed, disableAnimation = false) {
+function applyCollapseState(
+  header,
+  content,
+  collapsed,
+  disableAnimation = false
+) {
   if (disableAnimation) {
     content.classList.add("no-transition");
     if (header) header.classList.add("no-transition");
@@ -1440,12 +1452,10 @@ document.addEventListener("DOMContentLoaded", function () {
     document
       .querySelectorAll(".table-tooltip.has-floating")
       .forEach((t) => t.classList.remove("has-floating"));
-    document
-      .querySelectorAll(".floating-error-tooltip")
-      .forEach((n) => {
-        n.style.visibility = "hidden";
-        n.style.opacity = "0";
-      });
+    document.querySelectorAll(".floating-error-tooltip").forEach((n) => {
+      n.style.visibility = "hidden";
+      n.style.opacity = "0";
+    });
   }
 
   // Throttled mousemove check: if pointer is not over a tooltip trigger, hide clones.
@@ -1576,7 +1586,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (modalTitle) modalTitle.textContent = "Add New Link";
   }
 
-  if (floatingBtn) floatingBtn.addEventListener("click", () => openAddModal(true));
+  if (floatingBtn)
+    floatingBtn.addEventListener("click", () => openAddModal(true));
   if (backdrop) backdrop.addEventListener("click", closeAddModal);
   if (modalCancelBtn) modalCancelBtn.addEventListener("click", closeAddModal);
 
@@ -1686,7 +1697,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // close modal on Escape from document
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && addModal && !addModal.classList.contains("hidden"))
+    if (
+      e.key === "Escape" &&
+      addModal &&
+      !addModal.classList.contains("hidden")
+    )
       closeAddModal();
   });
 
@@ -1750,7 +1765,9 @@ document.addEventListener("DOMContentLoaded", function () {
   markActiveAccent(storedAccent);
   markActiveRelativeTime(currentRelativeTime);
   relativeTimeRadios.forEach((radio) => {
-    radio.addEventListener("change", () => applyRelativeTimePreference(radio.value));
+    radio.addEventListener("change", () =>
+      applyRelativeTimePreference(radio.value)
+    );
   });
 
   function openCategoryModal() {

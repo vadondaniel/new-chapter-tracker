@@ -1,5 +1,6 @@
-{% macro render_chapter_table(rows, show_found_column=False, show_save_button=False, current_category='main') -%}
-{% set saved_label = 'Last Saved Chapter' if show_found_column else 'Last Chapter' %}
+{% macro render_chapter_table(rows, show_found_column=False,
+show_save_button=False, current_category='main') -%} {% set saved_label = 'Last
+Saved Chapter' if show_found_column else 'Last Chapter' %}
 <div class="table-wrapper">
   <table border="1">
     <thead>
@@ -8,8 +9,7 @@
       <th>Last Saved Chapter</th>
       {% else %}
       <th>Last Chapter</th>
-      {% endif %}
-      {% if show_found_column %}
+      {% endif %} {% if show_found_column %}
       <th>Last Found Chapter</th>
       {% endif %}
       <th>Last Updated</th>
@@ -27,11 +27,14 @@
       </td>
       <td data-label="{{ saved_label }}">{{ data.last_saved }}</td>
       {% if show_found_column %}
-      <td style="font-weight: 600;" data-label="Last Found Chapter">
+      <td style="font-weight: 600" data-label="Last Found Chapter">
         {{ data.last_found }}
       </td>
       {% endif %}
-      <td style="white-space: nowrap; width: auto; text-align: center;" data-label="Last Updated">
+      <td
+        style="white-space: nowrap; width: auto; text-align: center"
+        data-label="Last Updated"
+      >
         <span
           class="tooltip timestamp-text{% if data.last_error %} error-timestamp{% endif %}"
           data-timestamp="{{ data.timestamp|default('')|e }}"
@@ -40,9 +43,10 @@
           <span class="timestamp-label">{{ data.timestamp_display }}</span>
           {% if data.timestamp %}
           <span class="timestamp-tooltiptext">{{ data.timestamp }}</span>
-          {% endif %}
-          {% if data.last_error %}
-          <span class="tooltiptext error-tooltiptext">{{ data.last_error }}</span>
+          {% endif %} {% if data.last_error %}
+          <span class="tooltiptext error-tooltiptext"
+            >{{ data.last_error }}</span
+          >
           {% endif %}
         </span>
       </td>
@@ -82,8 +86,12 @@
                 <span class="tooltiptext">Edit</span>
               </div>
               <div class="table-tooltip">
-                <button class="favorite{% if data.favorite %} favorited{% endif %}">
-                  <i class="{% if data.favorite %}fas{% else %}far{% endif %} fa-star"></i>
+                <button
+                  class="favorite{% if data.favorite %} favorited{% endif %}"
+                >
+                  <i
+                    class="{% if data.favorite %}fas{% else %}far{% endif %} fa-star"
+                  ></i>
                 </button>
                 <span class="tooltiptext">Favorite</span>
               </div>

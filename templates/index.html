@@ -8,9 +8,18 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/styles.css') }}"
     />
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"
+    ></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
@@ -46,7 +55,10 @@
       window.initialCategoryData = {{ nav_categories|tojson }};
       window.currentNavInfo = {{ current_nav_info|tojson }};
     </script>
-    <script defer src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script
+      defer
+      src="{{ url_for('static', filename='js/scripts.js') }}"
+    ></script>
     <link
       rel="preload"
       href="{{ url_for('favicon') }}?v={{ asset_version }}"
@@ -99,42 +111,58 @@
     />
     <meta name="theme-color" content="#ffffff" />
   </head>
-  <body data-category="{{ current_category }}" data-last-update="{{ last_full_update }}">
+  <body
+    data-category="{{ current_category }}"
+    data-last-update="{{ last_full_update }}"
+  >
     {% from "macros/chapter_table.html" import render_chapter_table %}
     <div class="layout-shell">
-      <nav class="category-nav" id="categoryNav" aria-label="Tracked categories">
+      <nav
+        class="category-nav"
+        id="categoryNav"
+        aria-label="Tracked categories"
+      >
         {% set nav_data = current_nav_info %}
         <div class="category-nav__list" id="categoryNavList">
-          {% for nav in nav_categories if nav.include_in_nav %}
-            {% set nav_url = url_for('main_index') if nav.name == 'main' else url_for('category_index', category=nav.name) %}
-            <a
-              href="{{ nav_url }}"
-              class="category-nav__item {% if nav.name == current_category %}active{% endif %}"
-              data-category="{{ nav.name }}"
+          {% for nav in nav_categories if nav.include_in_nav %} {% set nav_url =
+          url_for('main_index') if nav.name == 'main' else
+          url_for('category_index', category=nav.name) %}
+          <a
+            href="{{ nav_url }}"
+            class="category-nav__item {% if nav.name == current_category %}active{% endif %}"
+            data-category="{{ nav.name }}"
+          >
+            <span class="category-nav__label">{{ nav.display_name }}</span>
+            <span class="category-nav__count" id="navCount-{{ nav.name }}"
+              >{{ nav.unsaved_count }}</span
             >
-              <span class="category-nav__label">{{ nav.display_name }}</span>
-              <span class="category-nav__count" id="navCount-{{ nav.name }}">{{ nav.unsaved_count }}</span>
-            </a>
-          {% endfor %}
-          {% if nav_data and not nav_data.include_in_nav %}
-            {% set nav_url = url_for('main_index') if current_category == 'main' else url_for('category_index', category=current_category) %}
-            {% set nav_label = nav_data.display_name or current_category|replace('_', ' ')|title %}
-            {% set nav_count = nav_data.unsaved_count if nav_data.unsaved_count is not none else differences|length %}
-            <a
-              href="{{ nav_url }}"
-              class="category-nav__item active"
-              data-category="{{ current_category }}"
+          </a>
+          {% endfor %} {% if nav_data and not nav_data.include_in_nav %} {% set
+          nav_url = url_for('main_index') if current_category == 'main' else
+          url_for('category_index', category=current_category) %} {% set
+          nav_label = nav_data.display_name or current_category|replace('_', '
+          ')|title %} {% set nav_count = nav_data.unsaved_count if
+          nav_data.unsaved_count is not none else differences|length %}
+          <a
+            href="{{ nav_url }}"
+            class="category-nav__item active"
+            data-category="{{ current_category }}"
+          >
+            <span class="category-nav__label"> {{ nav_label }} </span>
+            <span
+              class="category-nav__count"
+              id="navCount-{{ current_category }}"
             >
-              <span class="category-nav__label">
-                {{ nav_label }}
-              </span>
-              <span class="category-nav__count" id="navCount-{{ current_category }}">
-                {{ nav_count }}
-              </span>
-            </a>
+              {{ nav_count }}
+            </span>
+          </a>
           {% endif %}
         </div>
-        <button type="button" id="openSettingsBtn" class="category-nav__item category-nav__item--settings">
+        <button
+          type="button"
+          id="openSettingsBtn"
+          class="category-nav__item category-nav__item--settings"
+        >
           <i class="fas fa-cog"></i>
           <span>Settings</span>
         </button>
@@ -146,7 +174,10 @@
 
           <div class="table-header" id="newChaptersHeader">
             <h2 class="toggle" data-section="new" onclick="toggleSection(this)">
-              New Chapters <span class="badge" id="newChaptersBadge">{{ differences|length }}</span>
+              New Chapters
+              <span class="badge" id="newChaptersBadge"
+                >{{ differences|length }}</span
+              >
             </h2>
             <div class="full-update-tooltip">
               <button onclick="forceUpdate()">
@@ -159,14 +190,9 @@
           </div>
 
           <div class="collapsible-content" id="newChaptersContent">
-            {% if differences %}
-            {{ render_chapter_table(
-              differences,
-              show_found_column=True,
-              show_save_button=True,
-              current_category=current_category
-            ) }}
-            {% else %}
+            {% if differences %} {{ render_chapter_table( differences,
+            show_found_column=True, show_save_button=True,
+            current_category=current_category ) }} {% else %}
             <div class="status-box status-success">
               <i class="fas fa-check-circle"></i>
               <span>All chapters are up to date!</span>
@@ -175,18 +201,21 @@
           </div>
 
           <div class="table-header" id="sameChaptersHeader">
-            <h2 class="toggle" data-section="same" onclick="toggleSection(this)">
-              No New Chapters <span class="badge" id="sameChaptersBadge">{{ same_data|length }}</span>
+            <h2
+              class="toggle"
+              data-section="same"
+              onclick="toggleSection(this)"
+            >
+              No New Chapters
+              <span class="badge" id="sameChaptersBadge"
+                >{{ same_data|length }}</span
+              >
             </h2>
           </div>
 
           <div class="collapsible-content collapsed" id="sameChaptersContent">
-            {% if same_data %}
-            {{ render_chapter_table(
-              same_data,
-              current_category=current_category
-            ) }}
-            {% else %}
+            {% if same_data %} {{ render_chapter_table( same_data,
+            current_category=current_category ) }} {% else %}
             <div class="status-box status-info">
               <i class="fas fa-info-circle"></i>
               <span>No entries being tracked yet.</span>
@@ -225,26 +254,34 @@
                   <span class="modal-info tooltip" aria-hidden="true">
                     <i class="fas fa-info-circle"></i>
                     <span class="tooltiptext info-tooltiptext">
-                      Using a longer update frequency reduces scrape pressure on the
-                      source and can help avoid rate limits; shorter intervals keep you
-                      closer to new chapters. Manual updates always fetch whatever’s
-                      available, no matter the schedule.
+                      Using a longer update frequency reduces scrape pressure on
+                      the source and can help avoid rate limits; shorter
+                      intervals keep you closer to new chapters. Manual updates
+                      always fetch whatever’s available, no matter the schedule.
                     </span>
                   </span>
                 </label>
-                <label class="modal-checkbox checkbox-field tooltip modal-checkbox-inline">
+                <label
+                  class="modal-checkbox checkbox-field tooltip modal-checkbox-inline"
+                >
                   <input type="checkbox" id="modalFreeOnly" />
                   <span class="custom-checkbox" aria-hidden="true"></span>
                   <span>Restrict to free chapters only</span>
                   <span class="tooltiptext info-tooltiptext">
-                    If the website/scraper supports it, you can choose to exclude paid
-                    entries/chapters from being found.
+                    If the website/scraper supports it, you can choose to
+                    exclude paid entries/chapters from being found.
                   </span>
                 </label>
               </div>
-              <label class="modal-field modal-field-select hidden" id="modalCategoryWrapper">
+              <label
+                class="modal-field modal-field-select hidden"
+                id="modalCategoryWrapper"
+              >
                 <span class="modal-field-label">Category</span>
-                <select id="modalCategory" aria-label="Change category"></select>
+                <select
+                  id="modalCategory"
+                  aria-label="Change category"
+                ></select>
               </label>
             </div>
             <div class="modal-actions">
@@ -266,13 +303,21 @@
       </div>
     </div>
 
-    <div id="historyModalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div
+      id="historyModalBackdrop"
+      class="modal-backdrop hidden"
+      role="dialog"
+      aria-modal="true"
+    >
       <div class="history-modal">
         <div class="history-modal__header">
           <h3 id="historyModalTitle">Link History</h3>
           <p class="history-modal__meta">
             <span>Added: <strong id="historyAddedAt">Unknown</strong></span>
-            <span>Last attempt: <strong id="historyLastAttempt">Unknown</strong></span>
+            <span
+              >Last attempt:
+              <strong id="historyLastAttempt">Unknown</strong></span
+            >
           </p>
           <div class="history-pill-group">
             <span class="pill" id="historyFrequencyPill"></span>
@@ -290,13 +335,21 @@
       aria-modal="true"
       aria-labelledby="settingsModalTitle"
     >
-      <div class="modal-backdrop" id="settingsModalBackdrop" tabindex="-1"></div>
+      <div
+        class="modal-backdrop"
+        id="settingsModalBackdrop"
+        tabindex="-1"
+      ></div>
       <div class="modal-box settings-box" role="document">
         <h2 id="settingsModalTitle">Settings</h2>
 
         <section class="settings-section">
           <h3>Theme</h3>
-          <div class="settings-options theme-options" role="radiogroup" aria-label="Theme mode">
+          <div
+            class="settings-options theme-options"
+            role="radiogroup"
+            aria-label="Theme mode"
+          >
             <label class="pill-option">
               <input type="radio" name="themeMode" value="auto" checked />
               <span>Auto</span>
@@ -314,13 +367,22 @@
 
         <section class="settings-section">
           <h3>Relative Time</h3>
-          <div class="settings-options relative-time-options" role="radiogroup" aria-label="Relative timestamp preference">
+          <div
+            class="settings-options relative-time-options"
+            role="radiogroup"
+            aria-label="Relative timestamp preference"
+          >
             <label class="pill-option">
               <input type="radio" name="relativeTimeMode" value="off" />
               <span>Off</span>
             </label>
             <label class="pill-option">
-              <input type="radio" name="relativeTimeMode" value="today" checked />
+              <input
+                type="radio"
+                name="relativeTimeMode"
+                value="today"
+                checked
+              />
               <span>Today / Yesterday</span>
             </label>
             <label class="pill-option">
@@ -344,11 +406,36 @@
         <section class="settings-section">
           <h3>Accent</h3>
           <div class="accent-options" id="accentOptions">
-            <button type="button" class="accent-swatch" data-accent="emerald" aria-label="Emerald"></button>
-            <button type="button" class="accent-swatch" data-accent="indigo" aria-label="Indigo"></button>
-            <button type="button" class="accent-swatch" data-accent="amber" aria-label="Amber"></button>
-            <button type="button" class="accent-swatch" data-accent="rose" aria-label="Rose"></button>
-            <button type="button" class="accent-swatch" data-accent="slate" aria-label="Slate"></button>
+            <button
+              type="button"
+              class="accent-swatch"
+              data-accent="emerald"
+              aria-label="Emerald"
+            ></button>
+            <button
+              type="button"
+              class="accent-swatch"
+              data-accent="indigo"
+              aria-label="Indigo"
+            ></button>
+            <button
+              type="button"
+              class="accent-swatch"
+              data-accent="amber"
+              aria-label="Amber"
+            ></button>
+            <button
+              type="button"
+              class="accent-swatch"
+              data-accent="rose"
+              aria-label="Rose"
+            ></button>
+            <button
+              type="button"
+              class="accent-swatch"
+              data-accent="slate"
+              aria-label="Slate"
+            ></button>
           </div>
         </section>
         <section class="settings-section settings-section--categories">
@@ -356,7 +443,11 @@
             <div class="settings-section__intro">
               <h3>Categories</h3>
             </div>
-            <button type="button" id="openCategoryManagerBtn" class="settings-launcher">
+            <button
+              type="button"
+              id="openCategoryManagerBtn"
+              class="settings-launcher"
+            >
               <i class="fas fa-list-alt"></i>
               Manage Categories
             </button>
@@ -372,7 +463,11 @@
       aria-modal="true"
       aria-labelledby="categoryModalTitle"
     >
-      <div class="modal-backdrop" id="categoryModalBackdrop" tabindex="-1"></div>
+      <div
+        class="modal-backdrop"
+        id="categoryModalBackdrop"
+        tabindex="-1"
+      ></div>
       <div class="modal-box category-box" role="document">
         <div class="category-modal__header">
           <div>
@@ -406,6 +501,5 @@
         </table>
       </div>
     </div>
-
   </body>
 </html>
