@@ -851,7 +851,6 @@ button.danger:hover {
   background: color-mix(in srgb, var(--overlay-backdrop) 80%, rgba(0, 0, 0, 0.3) 20%);
   box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.25);
   z-index: 900;
-  cursor: pointer;
 }
 
 /* Optional blur treatment: add .backdrop-blur to <body> to re-enable GPU blur */
