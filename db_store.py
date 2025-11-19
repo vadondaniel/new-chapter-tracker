@@ -47,7 +47,8 @@ class ChapterDatabase:
             self._ensure_links_columns(conn)
             self._ensure_scraped_entries_table(conn)
             self._ensure_categories_table(conn)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_links_category ON links(category)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_links_category ON links(category)")
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_scraped_entries_link ON scraped_entries(link_id)"
             )
@@ -65,9 +66,11 @@ class ChapterDatabase:
             )
             """
         )
-        columns = [row["name"] for row in conn.execute("PRAGMA table_info(scraped_entries)").fetchall()]
+        columns = [row["name"] for row in conn.execute(
+            "PRAGMA table_info(scraped_entries)").fetchall()]
         if "id" not in columns:
-            conn.execute("ALTER TABLE scraped_entries RENAME TO scraped_entries_old")
+            conn.execute(
+                "ALTER TABLE scraped_entries RENAME TO scraped_entries_old")
             conn.execute(
                 """
                 CREATE TABLE scraped_entries (
@@ -115,8 +118,10 @@ class ChapterDatabase:
                 "ALTER TABLE categories ADD COLUMN include_in_nav INTEGER NOT NULL DEFAULT 1"
             )
         if "sort_order" not in columns:
-            conn.execute("ALTER TABLE categories ADD COLUMN sort_order INTEGER")
-        rows = conn.execute("SELECT name, display_name FROM categories").fetchall()
+            conn.execute(
+                "ALTER TABLE categories ADD COLUMN sort_order INTEGER")
+        rows = conn.execute(
+            "SELECT name, display_name FROM categories").fetchall()
         for row in rows:
             current = (row["display_name"] or "").strip()
             fallback = (row["name"][:1] or "M").upper()
@@ -187,7 +192,8 @@ class ChapterDatabase:
                 )
 
     def _ensure_links_columns(self, conn):
-        columns = [row["name"] for row in conn.execute("PRAGMA table_info(links)").fetchall()]
+        columns = [row["name"] for row in conn.execute(
+            "PRAGMA table_info(links)").fetchall()]
         needed = {"added_at", "favorite", "last_attempt", "last_error"}
         missing = needed - set(columns)
         if not missing:
@@ -198,9 +204,11 @@ class ChapterDatabase:
             elif col == "last_error":
                 conn.execute("ALTER TABLE links ADD COLUMN last_error TEXT")
             elif col == "added_at":
-                conn.execute("ALTER TABLE links ADD COLUMN added_at TEXT NOT NULL DEFAULT 'N/A'")
+                conn.execute(
+                    "ALTER TABLE links ADD COLUMN added_at TEXT NOT NULL DEFAULT 'N/A'")
             elif col == "favorite":
-                conn.execute("ALTER TABLE links ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0")
+                conn.execute(
+                    "ALTER TABLE links ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0")
 
     @staticmethod
     def _normalize_frequency(value):
@@ -237,7 +245,8 @@ class ChapterDatabase:
 
     def _get_link_id(self, url: str) -> Optional[int]:
         with self._connect() as conn:
-            row = conn.execute("SELECT id FROM links WHERE url = ?", (url,)).fetchone()
+            row = conn.execute(
+                "SELECT id FROM links WHERE url = ?", (url,)).fetchone()
         return row["id"] if row else None
 
     def get_links(self, category: str) -> List[Dict]:
@@ -323,7 +332,7 @@ class ChapterDatabase:
     def get_scraped_data(self, category: str) -> Dict[str, Dict]:
         with self._connect() as conn:
             rows = conn.execute(
-            """
+                """
                 SELECT
                     l.url,
                     l.name,
@@ -554,7 +563,8 @@ class ChapterDatabase:
         params.append(url)
         with self._connect() as conn:
             conn.execute(
-                f"UPDATE links SET {', '.join(updates)} WHERE url = ?", tuple(params)
+                f"UPDATE links SET {', '.join(updates)} WHERE url = ?", tuple(
+                    params)
             )
 
     def merge_scraped(self, entries: Dict[str, Dict]):
@@ -565,7 +575,8 @@ class ChapterDatabase:
                 self.update_link_metadata(url, name=entry["name"])
             if "free_only" in entry:
                 self.update_link_metadata(url, free_only=entry["free_only"])
-            self.update_scraped_entry(url, entry["last_found"], entry["timestamp"])
+            self.update_scraped_entry(
+                url, entry["last_found"], entry["timestamp"])
             self.record_success(url, entry.get("retrieved_at"))
 
     def get_categories(self) -> List[Dict[str, Any]]:
@@ -668,7 +679,8 @@ class ChapterDatabase:
         normalized = self._normalize_category(name)
         if not normalized:
             raise ValueError("Category name is required")
-        display = (display_name or "").strip() or self._default_display_name(normalized)
+        display = (display_name or "").strip(
+        ) or self._default_display_name(normalized)
         interval = self._sanitize_interval(update_interval_hours or 1)
         with self._connect() as conn:
             conn.execute(
@@ -677,11 +689,11 @@ class ChapterDatabase:
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (
-                  normalized,
-                  interval,
-                  display,
-                  self._to_flag(include_in_nav),
-                  self._get_next_sort_value(conn),
+                    normalized,
+                    interval,
+                    display,
+                    self._to_flag(include_in_nav),
+                    self._get_next_sort_value(conn),
                 ),
             )
         return self.get_category(normalized) or {}
@@ -699,7 +711,8 @@ class ChapterDatabase:
             return None
         updates = []
         params: List[Any] = []
-        normalized_new_name = self._normalize_category(new_name) if new_name else None
+        normalized_new_name = self._normalize_category(
+            new_name) if new_name else None
         if normalized_new_name and normalized_new_name != name:
             updates.append("name = ?")
             params.append(normalized_new_name)
@@ -708,7 +721,8 @@ class ChapterDatabase:
             params.append(self._sanitize_interval(update_interval_hours))
         if display_name is not None:
             base_name = normalized_new_name or name
-            cleaned = (display_name or "").strip() or self._default_display_name(base_name)
+            cleaned = (display_name or "").strip(
+            ) or self._default_display_name(base_name)
             updates.append("display_name = ?")
             params.append(cleaned)
         if include_in_nav is not None:

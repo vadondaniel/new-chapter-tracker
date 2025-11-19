@@ -11,6 +11,7 @@ SUPPORTS_FREE_TOGGLE = True
 
 FREE_ONLY_DEFAULT = True
 
+
 def scrape(url, free_only=False):
     latest_chapter = "No chapters found"
     timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
@@ -31,10 +32,12 @@ def scrape(url, free_only=False):
     try:
         page = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(page.text, "html.parser")
-        rss_link = soup.find("link", rel="alternate", type="application/rss+xml")
+        rss_link = soup.find("link", rel="alternate",
+                             type="application/rss+xml")
         if not rss_link or not rss_link.get("href"):
             msg = "RSS feed link missing"
-            logging.warning("%s for %s, cannot check for new chapters", msg, url)
+            logging.warning(
+                "%s for %s, cannot check for new chapters", msg, url)
             return latest_chapter, timestamp, False, msg
 
         rss_url = urljoin("https://ichicomi.com", rss_link["href"])

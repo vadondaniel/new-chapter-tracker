@@ -72,7 +72,8 @@ def test_annotate_support_flags_uses_scraping_support_flags(monkeypatch):
         "https://example.com": {"name": "Example"},
         "https://other.com": {"name": "Other"},
     }
-    monkeypatch.setattr(scraping, "supports_free_toggle", lambda url: "other" in url)
+    monkeypatch.setattr(scraping, "supports_free_toggle",
+                        lambda url: "other" in url)
 
     annotated = annotate_support_flags(entries)
 

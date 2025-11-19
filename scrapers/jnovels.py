@@ -8,6 +8,7 @@ from scraper_utils import parse_timestamp
 DOMAINS = ["jnovels.com"]
 SUPPORTS_FREE_TOGGLE = False
 
+
 def scrape(url, free_only=False):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "html.parser")
@@ -27,7 +28,8 @@ def scrape(url, free_only=False):
 
     chapter_text = title_tag.text.strip() if title_tag else "No title found"
     timestamp = (
-        parse_timestamp(time_tag["datetime"]) if time_tag else datetime.datetime.now().strftime("%Y/%m/%d")
+        parse_timestamp(time_tag["datetime"]) if time_tag else datetime.datetime.now(
+        ).strftime("%Y/%m/%d")
     )
 
     return chapter_text, timestamp, True, None

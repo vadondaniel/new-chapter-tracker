@@ -19,13 +19,16 @@ update_in_progress = False
 socketio = None  # Set externally
 
 # --------------------- Selenium Manager ---------------------
+
+
 class BrowserManager:
     _instance = None
 
     def __init__(self):
         options = Options()
         # Headless Chrome mode
-        options.add_argument('--headless=new')  # Use the new headless mode (Chrome 109+)
+        # Use the new headless mode (Chrome 109+)
+        options.add_argument('--headless=new')
 
         # System and performance flags
         options.add_argument('--no-sandbox')
@@ -52,7 +55,7 @@ class BrowserManager:
         options.add_argument('--no-default-browser-check')
         options.add_argument('--ignore-certificate-errors')
         options.add_argument('--guest')
-        
+
         # Suppress logs
         options.add_argument("--log-level=3")
         self.driver = webdriver.Chrome(
@@ -73,6 +76,8 @@ class BrowserManager:
             cls._instance = None
 
 # --------------------- Scraper Plugins ---------------------
+
+
 def load_scraper_plugins():
     registry = {}
     package = scrapers
@@ -82,13 +87,15 @@ def load_scraper_plugins():
         try:
             module = importlib.import_module(f"{package.__name__}.{name}")
         except Exception as exc:
-            logging.exception("Failed to import scraper plugin %s: %s", name, exc)
+            logging.exception(
+                "Failed to import scraper plugin %s: %s", name, exc)
             continue
 
         scrape_func = getattr(module, "scrape", None)
         domains = getattr(module, "DOMAINS", [])
         if not callable(scrape_func) or not domains:
-            logging.warning("Plugin %s missing scrape entry point or domains", name)
+            logging.warning(
+                "Plugin %s missing scrape entry point or domains", name)
             continue
 
         supports_free_toggle = getattr(module, "SUPPORTS_FREE_TOGGLE", False)
@@ -102,6 +109,7 @@ def load_scraper_plugins():
     if not registry:
         logging.warning("No scraper plugins were loaded.")
     return registry
+
 
 SCRAPERS = load_scraper_plugins()
 
@@ -154,7 +162,8 @@ def process_link(link, entry, force_update=False):
             },
             None,
         )
-    return None, {link["url"]: {"error": error or f"No data returned from {link['url']}",}}
+    return None, {link["url"]: {"error": error or f"No data returned from {link['url']}", }}
+
 
 def scrape_website(link):
     url = link["url"]
@@ -169,10 +178,13 @@ def scrape_website(link):
     )
 
 # --------------------- Main Scraper ---------------------
+
+
 def normalize_scrape_result(result):
     if isinstance(result, dict):
         chapter = result.get("last_found", "No chapters found")
-        timestamp = result.get("timestamp", datetime.datetime.now().strftime("%Y/%m/%d"))
+        timestamp = result.get(
+            "timestamp", datetime.datetime.now().strftime("%Y/%m/%d"))
         success = result.get("success", True)
         error = result.get("error")
     elif isinstance(result, (list, tuple)):
@@ -204,7 +216,8 @@ def scrape_all_links(links, previous_data, force_update=False, category=None):
         if socketio:
             socketio.emit(
                 "update_progress",
-                {"current": processed, "total": total_links, "category": category or "main"},
+                {"current": processed, "total": total_links,
+                    "category": category or "main"},
             )
         if data:
             new_data[link["url"]] = data
@@ -218,5 +231,7 @@ def scrape_all_links(links, previous_data, force_update=False, category=None):
     return new_data, failures
 
 # --------------------- Pipeline ---------------------
+
+
 def shutdown_scraper():
     BrowserManager.quit_driver()

@@ -9,6 +9,7 @@ from scraper_utils import convert_to_rss_url
 DOMAINS = ["nyaa.si"]
 SUPPORTS_FREE_TOGGLE = False
 
+
 def scrape(url, free_only=False):
     timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
     rss_url = convert_to_rss_url(url)

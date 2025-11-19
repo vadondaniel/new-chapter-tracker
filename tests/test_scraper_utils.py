@@ -6,13 +6,16 @@ from scraper_utils import convert_to_rss_url, needs_update, parse_timestamp
 def test_needs_update_variants():
     assert needs_update("https://example.com", {}, 7, False)
     now_ts = datetime.now().strftime("%Y/%m/%d")
-    assert needs_update("https://example.com", {"https://example.com": {"timestamp": now_ts}}, 7, True)
+    assert needs_update("https://example.com",
+                        {"https://example.com": {"timestamp": now_ts}}, 7, True)
 
     old_ts = (datetime.now() - timedelta(days=5)).strftime("%Y/%m/%d")
-    assert needs_update("https://example.com", {"https://example.com": {"timestamp": old_ts}}, 2, False)
+    assert needs_update("https://example.com",
+                        {"https://example.com": {"timestamp": old_ts}}, 2, False)
 
     recent_ts = (datetime.now() - timedelta(hours=1)).strftime("%Y/%m/%d")
-    assert not needs_update("https://example.com", {"https://example.com": {"timestamp": recent_ts}}, 1, False)
+    assert not needs_update(
+        "https://example.com", {"https://example.com": {"timestamp": recent_ts}}, 1, False)
 
 
 def test_parse_timestamp_rounds_to_slash_format():

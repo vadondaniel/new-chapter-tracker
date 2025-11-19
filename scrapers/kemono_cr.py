@@ -6,6 +6,7 @@ from dateutil import parser
 DOMAINS = ["kemono.cr"]
 SUPPORTS_FREE_TOGGLE = False
 
+
 def scrape(url, free_only=False):
     timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
     api_url = url.replace("kemono.cr", "kemono.cr/api/v1") + "/posts"

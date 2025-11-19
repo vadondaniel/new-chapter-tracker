@@ -1,3 +1,4 @@
+import scraping
 import os
 import math
 import logging
@@ -26,7 +27,6 @@ update_in_progress = False
 ASSET_VERSION = os.environ.get("CHAPTER_TRACKER_ASSET_VERSION", "1")
 
 # Pass the socketio object to scraping.py
-import scraping
 scraping.socketio = socketio
 
 
@@ -66,6 +66,8 @@ def annotate_timestamp_display(entries):
     }
 
 # --------------------- Helpers ---------------------
+
+
 def resolve_category(category=None):
     names = set(db.get_category_names())
     if category in names:
@@ -148,17 +150,23 @@ def parse_update_frequency(value, default):
 
 
 def get_link_metadata(payload, existing=None):
-    existing_freq = existing.get("update_frequency") if existing else DEFAULT_UPDATE_FREQUENCY
-    freq = parse_update_frequency(payload.get("update_frequency"), existing_freq)
+    existing_freq = existing.get(
+        "update_frequency") if existing else DEFAULT_UPDATE_FREQUENCY
+    freq = parse_update_frequency(
+        payload.get("update_frequency"), existing_freq)
 
-    existing_free_flag = existing.get("free_only") if existing else DEFAULT_FREE_ONLY
+    existing_free_flag = existing.get(
+        "free_only") if existing else DEFAULT_FREE_ONLY
     free_only = parse_free_only(payload.get("free_only"), existing_free_flag)
     return freq, free_only
 
 # --------------------- Background Jobs ---------------------
+
+
 def run_update_job(category="main", force_update=False):
     with app.app_context():
-        logging.info(f"Starting scheduled update for {category} (force={force_update})...")
+        logging.info(
+            f"Starting scheduled update for {category} (force={force_update})...")
         try:
             links = db.get_links(category)
             current_data = db.get_scraped_data(category)
@@ -170,6 +178,7 @@ def run_update_job(category="main", force_update=False):
             logging.info(f"Scheduled update for {category} completed.")
         finally:
             db.set_category_last_checked(category, datetime.now().isoformat())
+
 
 def schedule_updates():
     scheduler = BackgroundScheduler(job_defaults={"max_instances": 1})
@@ -209,13 +218,16 @@ def schedule_updates():
             interval_hours,
         )
     scheduler.start()
-    
+
+
 def build_view_data(update_type):
     previous_data = annotate_support_flags(db.get_scraped_data(update_type))
     previous_data = annotate_timestamp_display(previous_data)
 
-    differences = {url: data for url, data in previous_data.items() if data["last_found"] != data["last_saved"]}
-    same_data = {url: data for url, data in previous_data.items() if data["last_found"] == data["last_saved"]}
+    differences = {url: data for url, data in previous_data.items(
+    ) if data["last_found"] != data["last_saved"]}
+    same_data = {url: data for url, data in previous_data.items(
+    ) if data["last_found"] == data["last_saved"]}
 
     def sort_entries(entries):
         return dict(
@@ -238,6 +250,8 @@ def build_view_data(update_type):
         "last_full_update": last_checked,
     }
 # --------------------- View Logic ---------------------
+
+
 def index(category=None):
     update_type = resolve_category(category)
     view_data = build_view_data(update_type)
@@ -247,7 +261,8 @@ def index(category=None):
         nav_categories, update_type, len(view_data["differences"])
     )
 
-    logging.info(f"Last full update ({update_type}): {view_data['last_full_update']}")
+    logging.info(
+        f"Last full update ({update_type}): {view_data['last_full_update']}")
     return render_template(
         "index.html",
         differences=view_data["differences"],
@@ -301,15 +316,18 @@ def chapter_data():
         }
     )
 
+
 def update(category=None):
     data = request.json
     db.mark_saved(data["url"])
     return jsonify({"status": "success"})
 
+
 def force_update(category=None):
     update_type = resolve_category(category)
     socketio.start_background_task(run_update_job, update_type, True)
     return jsonify({"status": "started"})
+
 
 def recheck(category=None):
     data = request.json
@@ -332,6 +350,7 @@ def recheck(category=None):
         db.record_failures(failure)
     return jsonify({"status": "success"})
 
+
 def history(category=None):
     data = request.json
     url = data.get("url")
@@ -341,6 +360,7 @@ def history(category=None):
     if not result:
         return jsonify({"status": "missing"}), 404
     return jsonify(result)
+
 
 def history_set_saved(category=None):
     data = request.json
@@ -357,6 +377,7 @@ def history_set_saved(category=None):
         return jsonify({"status": "missing"}), 404
     db.set_last_saved(url, entry["last_found"] or "N/A")
     return jsonify({"status": "success"})
+
 
 def history_delete_entry(category=None):
     data = request.json
@@ -376,6 +397,7 @@ def history_delete_entry(category=None):
         return jsonify({"status": "missing"}), 404
     return jsonify({"status": "success"})
 
+
 def favorite_link(category=None):
     data = request.json
     target_url = data.get("url")
@@ -388,6 +410,7 @@ def favorite_link(category=None):
         favorite_flag = bool(favorite_flag)
     db.update_link_metadata(target_url, favorite=favorite_flag)
     return jsonify({"status": "success"})
+
 
 def add_link(category=None):
     data = request.json
@@ -418,6 +441,7 @@ def add_link(category=None):
     if failure:
         db.record_failures(failure)
     return jsonify({"status": "success"})
+
 
 def edit_link(category=None):
     data = request.json
@@ -452,29 +476,45 @@ def edit_link(category=None):
 
     return jsonify({"status": "success"})
 
+
 def remove_link(category=None):
     data = request.json
     db.remove_link(data["url"])
     return jsonify({"status": "success"})
 
 # --------------------- Routes ---------------------
+
+
 @app.route("/")
 def main_index():
     return index()
 
+
 # Main routes (no category prefix)
-app.add_url_rule("/update", endpoint="main_update", view_func=lambda: update("main"), methods=["POST"])
-app.add_url_rule("/force_update", endpoint="main_force_update", view_func=lambda: force_update("main"), methods=["POST"])
-app.add_url_rule("/recheck", endpoint="main_recheck", view_func=lambda: recheck("main"), methods=["POST"])
-app.add_url_rule("/add", endpoint="main_add", view_func=lambda: add_link("main"), methods=["POST"])
-app.add_url_rule("/edit", endpoint="main_edit", view_func=lambda: edit_link("main"), methods=["POST"])
-app.add_url_rule("/remove", endpoint="main_remove", view_func=lambda: remove_link("main"), methods=["POST"])
-app.add_url_rule("/favorite", endpoint="main_favorite", view_func=lambda: favorite_link("main"), methods=["POST"])
-app.add_url_rule("/history", endpoint="main_history", view_func=lambda: history("main"), methods=["POST"])
-app.add_url_rule("/history/set_saved", endpoint="main_history_set_saved", view_func=lambda: history_set_saved("main"), methods=["POST"])
-app.add_url_rule("/history/delete", endpoint="main_history_delete", view_func=lambda: history_delete_entry("main"), methods=["POST"])
+app.add_url_rule("/update", endpoint="main_update",
+                 view_func=lambda: update("main"), methods=["POST"])
+app.add_url_rule("/force_update", endpoint="main_force_update",
+                 view_func=lambda: force_update("main"), methods=["POST"])
+app.add_url_rule("/recheck", endpoint="main_recheck",
+                 view_func=lambda: recheck("main"), methods=["POST"])
+app.add_url_rule("/add", endpoint="main_add",
+                 view_func=lambda: add_link("main"), methods=["POST"])
+app.add_url_rule("/edit", endpoint="main_edit",
+                 view_func=lambda: edit_link("main"), methods=["POST"])
+app.add_url_rule("/remove", endpoint="main_remove",
+                 view_func=lambda: remove_link("main"), methods=["POST"])
+app.add_url_rule("/favorite", endpoint="main_favorite",
+                 view_func=lambda: favorite_link("main"), methods=["POST"])
+app.add_url_rule("/history", endpoint="main_history",
+                 view_func=lambda: history("main"), methods=["POST"])
+app.add_url_rule("/history/set_saved", endpoint="main_history_set_saved",
+                 view_func=lambda: history_set_saved("main"), methods=["POST"])
+app.add_url_rule("/history/delete", endpoint="main_history_delete",
+                 view_func=lambda: history_delete_entry("main"), methods=["POST"])
 
 # dynamically add routes for any category slug
+
+
 @app.route("/api/categories", methods=["GET", "POST"])
 def categories_api():
     if request.method == "GET":
@@ -484,7 +524,8 @@ def categories_api():
     name = data.get("name")
     display_name = data.get("display_name")
     include_in_nav = parse_free_only(data.get("include_in_nav", True), True)
-    update_interval = data.get("update_interval_hours") or data.get("update_interval")
+    update_interval = data.get(
+        "update_interval_hours") or data.get("update_interval")
     try:
         created = db.create_category(
             name=name,
@@ -600,6 +641,7 @@ def favicon():
 @app.errorhandler(404)
 def handle_404(_error):
     return redirect(url_for("main_index"))
+
 
 # --------------------- Startup ---------------------
 if __name__ == "__main__":

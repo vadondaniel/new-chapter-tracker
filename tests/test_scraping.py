@@ -12,7 +12,8 @@ def test_normalize_scrape_result_handles_dict():
         "success": True,
         "error": None,
     }
-    chapter, timestamp, success, error = scraping.normalize_scrape_result(result)
+    chapter, timestamp, success, error = scraping.normalize_scrape_result(
+        result)
     assert chapter == "Chapter 1"
     assert timestamp == "2025/11/17"
     assert success is True
@@ -30,7 +31,8 @@ def test_normalize_scrape_result_handles_tuple_like_inputs():
 
 
 def test_normalize_scrape_result_handles_strings():
-    chapter, timestamp, success, error = scraping.normalize_scrape_result("Chapter x")
+    chapter, timestamp, success, error = scraping.normalize_scrape_result(
+        "Chapter x")
     assert "Chapter x" in chapter
     assert isinstance(timestamp, str)
     assert success is True
