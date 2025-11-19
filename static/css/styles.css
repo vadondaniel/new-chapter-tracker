@@ -1908,18 +1908,24 @@ a:visited {
   }
 
   .table-header {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
 
+  .table-header h2 {
+    order: 2;
+    margin: 0;
+  }
+
   .table-header .full-update-tooltip {
-    width: 100%;
-    justify-content: flex-start;
+    order: 1;
+    align-self: flex-end;
   }
 
   .table-header .full-update-tooltip button {
-    width: 100%;
+    width: auto;
     justify-content: center;
   }
 
