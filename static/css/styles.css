@@ -1891,14 +1891,17 @@ a:visited {
 
 /* Success style (all up to date) */
 .status-success {
-  border-left: 5px solid var(--success-border);
-  color: var(--success-color);
-  background: var(--success-bg);
+  border-left: 5px solid var(--accent-color);
+  color: var(--accent-color);
+  background: var(--accent-overlay);
 }
 
-.status-success i {
-  color: var(--accent-color);
-}
+/* Success style (all up to date) (always green) */
+/*.status-success {
+  border-left: 5px solid var(--success-color);
+  color: var(--success-color);
+  background: var(--success-bg);
+}*/
 
 /* Info style (no entries tracked yet) */
 .status-info {
