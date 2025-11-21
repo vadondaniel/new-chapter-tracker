@@ -3,11 +3,13 @@ import os
 import math
 import logging
 import sqlite3
+import atexit
 from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
+from threading import Lock
 
 from scraping import process_link, scrape_all_links
 from db_store import ChapterDatabase, DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY
@@ -25,6 +27,9 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 update_in_progress = False
 ASSET_VERSION = os.environ.get("CHAPTER_TRACKER_ASSET_VERSION", "1")
+_scheduler = None
+_scheduler_lock = Lock()
+_scheduler_started = False
 
 # Pass the socketio object to scraping.py
 scraping.socketio = socketio
@@ -180,44 +185,69 @@ def run_update_job(category="main", force_update=False):
             db.set_category_last_checked(category, datetime.now().isoformat())
 
 
-def schedule_updates():
-    scheduler = BackgroundScheduler(job_defaults={"max_instances": 1})
-    now = datetime.now()
-    for category in db.get_categories():
-        name = category["name"]
-        interval = category.get("update_interval_hours") or 1
-        try:
-            interval_hours = max(1, int(interval))
-        except (TypeError, ValueError):
-            interval_hours = 1
+def schedule_updates(force=False):
+    global _scheduler, _scheduler_started
+    with _scheduler_lock:
+        if _scheduler is None:
+            _scheduler = BackgroundScheduler(job_defaults={"max_instances": 1})
+        elif force and _scheduler_started:
+            _scheduler.remove_all_jobs()
+        elif _scheduler_started:
+            # Scheduler already configured and running; nothing to do.
+            return _scheduler
 
-        last_checked_str = category.get("last_checked")
-        last_checked = None
-        if last_checked_str:
+        now = datetime.now()
+        for category in db.get_categories():
+            name = category["name"]
+            interval = category.get("update_interval_hours") or 1
             try:
-                last_checked = datetime.fromisoformat(last_checked_str)
-            except ValueError:
-                last_checked = None
+                interval_hours = max(1, int(interval))
+            except (TypeError, ValueError):
+                interval_hours = 1
 
-        next_run_time = now
-        if last_checked:
-            candidate = last_checked + timedelta(hours=interval_hours)
-            if candidate > now:
-                next_run_time = candidate
+            last_checked_str = category.get("last_checked")
+            last_checked = None
+            if last_checked_str:
+                try:
+                    last_checked = datetime.fromisoformat(last_checked_str)
+                except ValueError:
+                    last_checked = None
 
-        scheduler.add_job(
-            lambda c=name: run_update_job(c),
-            "interval",
-            hours=interval_hours,
-            next_run_time=next_run_time,
-        )
-        logging.info(
-            "Scheduled '%s' to run next at %s (interval=%dh)",
-            name,
-            next_run_time.isoformat(),
-            interval_hours,
-        )
-    scheduler.start()
+            next_run_time = now
+            if last_checked:
+                candidate = last_checked + timedelta(hours=interval_hours)
+                if candidate > now:
+                    next_run_time = candidate
+
+            _scheduler.add_job(
+                run_update_job,
+                "interval",
+                hours=interval_hours,
+                next_run_time=next_run_time,
+                id=f"update_{name}",
+                replace_existing=True,
+                kwargs={"category": name},
+            )
+            logging.info(
+                "Scheduled '%s' to run next at %s (interval=%dh)",
+                name,
+                next_run_time.isoformat(),
+                interval_hours,
+            )
+
+        if not _scheduler_started:
+            _scheduler.start()
+            _scheduler_started = True
+        return _scheduler
+
+
+@atexit.register
+def _shutdown_scheduler():
+    global _scheduler_started
+    with _scheduler_lock:
+        if _scheduler and _scheduler_started:
+            _scheduler.shutdown(wait=False)
+            _scheduler_started = False
 
 
 def build_view_data(update_type):
@@ -641,6 +671,19 @@ def favicon():
 @app.errorhandler(404)
 def handle_404(_error):
     return redirect(url_for("main_index"))
+
+
+def _start_scheduler_hook():
+    schedule_updates()
+
+
+if hasattr(app, "before_serving"):
+    app.before_serving(_start_scheduler_hook)
+elif hasattr(app, "before_first_request"):
+    app.before_first_request(_start_scheduler_hook)
+else:
+    # Fallback for very old Flask versions; harmless because schedule_updates is idempotent.
+    app.before_request(_start_scheduler_hook)
 
 
 # --------------------- Startup ---------------------
