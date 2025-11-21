@@ -1731,6 +1731,15 @@ a:visited {
   margin-bottom: 5px;
 }
 
+.table-tooltip.tooltip-top .tooltiptext {
+  bottom: 100%;
+  top: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 5px;
+  margin-top: 0;
+}
+
 /* Full update tooltip to the left */
 .full-update-tooltip .tooltiptext {
   top: 50%;

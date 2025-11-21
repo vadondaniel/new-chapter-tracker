@@ -1094,18 +1094,23 @@ function buildCategoryRow(cat, isNew) {
   const includeCell = document.createElement("td");
   includeCell.className = "category-table__toggle";
   const includeWrapper = document.createElement("label");
+  includeWrapper.className =
+    "checkbox-field category-checkbox table-tooltip tooltip-top";
   const includeInput = document.createElement("input");
   includeInput.type = "checkbox";
   includeInput.checked =
     isNew || cat?.include_in_nav === undefined ? true : !!cat.include_in_nav;
   includeInput.className = "category-input-include";
   includeInput.setAttribute("aria-label", "Show in navigation");
-  includeWrapper.className = "checkbox-field category-checkbox";
   const includeIndicator = document.createElement("span");
   includeIndicator.className = "custom-checkbox";
   includeIndicator.setAttribute("aria-hidden", "true");
+  const includeTooltip = document.createElement("span");
+  includeTooltip.className = "tooltiptext";
+  includeTooltip.textContent = "Show in navigation";
   includeWrapper.appendChild(includeInput);
   includeWrapper.appendChild(includeIndicator);
+  includeWrapper.appendChild(includeTooltip);
   includeCell.appendChild(includeWrapper);
 
   const actionsCell = document.createElement("td");
@@ -1114,12 +1119,20 @@ function buildCategoryRow(cat, isNew) {
   const saveBtn = document.createElement("button");
   saveBtn.type = "button";
   saveBtn.innerHTML = '<i class="fas fa-save"></i>';
-  saveBtn.classList.add("category-save-btn");
+  saveBtn.classList.add("category-save-btn", "table-tooltip", "tooltip-top");
   saveBtn.disabled = !isNew;
+  const saveTooltip = document.createElement("span");
+  saveTooltip.className = "tooltiptext";
+  saveTooltip.textContent = "Save";
+  saveBtn.appendChild(saveTooltip);
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
   deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-  deleteBtn.classList.add("danger");
+  deleteBtn.classList.add("danger", "table-tooltip", "tooltip-top");
+  const deleteTooltip = document.createElement("span");
+  deleteTooltip.className = "tooltiptext";
+  deleteTooltip.textContent = "Delete";
+  deleteBtn.appendChild(deleteTooltip);
   if (!isNew && isMain) {
     deleteBtn.disabled = true;
     deleteBtn.classList.add("disabled");
