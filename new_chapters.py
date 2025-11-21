@@ -4,11 +4,13 @@ import math
 import logging
 import sqlite3
 import atexit
+import atexit
 from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
+from threading import Lock
 from threading import Lock
 
 from scraping import process_link, scrape_all_links
@@ -27,6 +29,9 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 update_in_progress = False
 ASSET_VERSION = os.environ.get("CHAPTER_TRACKER_ASSET_VERSION", "1")
+_scheduler = None
+_scheduler_lock = Lock()
+_scheduler_started = False
 _scheduler = None
 _scheduler_lock = Lock()
 _scheduler_started = False
