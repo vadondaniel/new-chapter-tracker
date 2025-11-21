@@ -675,6 +675,100 @@ function attachErrorTooltips(root = document) {
     .forEach(attachErrorTooltip);
 }
 
+const attachTimestampTooltip = (trigger) => {
+  if (!trigger || trigger.dataset.timestampTooltipInitialized === "true")
+    return;
+  const tip = trigger.querySelector(".timestamp-tooltiptext");
+  if (!tip) return;
+  trigger.dataset.timestampTooltipInitialized = "true";
+  tip.classList.add("timestamp-tooltip-detached");
+
+  let floating = null;
+
+  const ensureFloating = () => {
+    if (floating) return;
+    floating = tip.cloneNode(true);
+    floating.classList.remove("timestamp-tooltiptext");
+    floating.classList.add("floating-timestamp-tooltip");
+    floating.style.position = "absolute";
+    floating.style.visibility = "hidden";
+    floating.style.opacity = "0";
+    document.body.appendChild(floating);
+  };
+
+  const positionFloating = () => {
+    if (!floating) return;
+    const rect = trigger.getBoundingClientRect();
+    const fRect = floating.getBoundingClientRect();
+    const gap = 6;
+    let top = rect.bottom + window.scrollY + gap;
+    let left = rect.left + window.scrollX + rect.width / 2 - fRect.width / 2;
+    const pad = 8;
+    const maxLeft =
+      window.scrollX + document.documentElement.clientWidth - fRect.width - pad;
+    left = Math.max(window.scrollX + pad, Math.min(left, maxLeft));
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight;
+    const maxTop =
+      window.scrollY +
+      viewportHeight -
+      fRect.height -
+      pad;
+    if (top > maxTop) {
+      top = rect.top + window.scrollY - fRect.height - gap;
+    }
+    if (top < window.scrollY + pad) {
+      top = window.scrollY + pad;
+    }
+    floating.style.top = `${top}px`;
+    floating.style.left = `${left}px`;
+  };
+
+  const showFloating = () => {
+    if (
+      !tip ||
+      tip.classList.contains("tooltip-hidden") ||
+      tip.getAttribute("aria-hidden") === "true"
+    ) {
+      hideFloating();
+      return;
+    }
+    const text = tip.textContent?.trim();
+    if (!text) {
+      hideFloating();
+      return;
+    }
+    ensureFloating();
+    floating.textContent = text;
+    positionFloating();
+    floating.style.visibility = "visible";
+    floating.style.opacity = "1";
+  };
+
+  const hideFloating = () => {
+    if (!floating) return;
+    floating.style.visibility = "hidden";
+    floating.style.opacity = "0";
+  };
+
+  trigger.addEventListener("mouseenter", showFloating);
+  trigger.addEventListener("mouseleave", hideFloating);
+  trigger.addEventListener("focusin", showFloating);
+  trigger.addEventListener("focusout", hideFloating);
+  window.addEventListener("scroll", hideFloating, { passive: true });
+  window.addEventListener("resize", () => {
+    positionFloating();
+    hideFloating();
+  });
+};
+
+function attachTimestampTooltips(root = document) {
+  if (!root) return;
+  root.querySelectorAll(".tooltip.timestamp-text").forEach((trigger) => {
+    attachTimestampTooltip(trigger);
+  });
+}
+
 function attachMenuToggle(toggle) {
   if (toggle.dataset.menuInitialized === "true") {
     return;
@@ -759,6 +853,7 @@ function initRowEnhancements(root = document) {
   setupDomainTooltips(root);
   setupFloatingTooltips(root);
   attachErrorTooltips(root);
+  attachTimestampTooltips(root);
   root
     .querySelectorAll(".menu-toggle")
     .forEach((toggle) => attachMenuToggle(toggle));
@@ -1465,6 +1560,10 @@ document.addEventListener("DOMContentLoaded", function () {
       .querySelectorAll(".table-tooltip.has-floating")
       .forEach((t) => t.classList.remove("has-floating"));
     document.querySelectorAll(".floating-error-tooltip").forEach((n) => {
+      n.style.visibility = "hidden";
+      n.style.opacity = "0";
+    });
+    document.querySelectorAll(".floating-timestamp-tooltip").forEach((n) => {
       n.style.visibility = "hidden";
       n.style.opacity = "0";
     });

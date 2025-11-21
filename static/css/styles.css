@@ -1788,6 +1788,10 @@ a:visited {
   opacity: 1;
 }
 
+.timestamp-tooltiptext.timestamp-tooltip-detached {
+  display: none !important;
+}
+
 /* floating tooltip (moved to body to avoid clipping) */
 .tooltiptext.floating {
   position: absolute;
@@ -1870,6 +1874,22 @@ a:visited {
   transition: opacity 0.15s ease;
   z-index: 1300;
   word-break: break-word;
+}
+
+.floating-timestamp-tooltip {
+  position: absolute;
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  padding: 4px 8px;
+  border-radius: var(--tooltip-radius);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-color);
+  box-shadow: var(--tooltip-shadow);
+  pointer-events: none;
+  font-size: 0.75rem;
+  z-index: 1250;
+  white-space: nowrap;
 }
 
 /* ========= Status Messages ========= */
