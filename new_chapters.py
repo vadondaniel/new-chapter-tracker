@@ -8,12 +8,12 @@ import atexit
 from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room, leave_room
 from apscheduler.schedulers.background import BackgroundScheduler
 from threading import Lock
 from threading import Lock
 
-from scraping import process_link, scrape_all_links
+from scraping import process_link, scrape_all_links, category_room_name
 from db_store import ChapterDatabase, DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY
 
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +32,7 @@ ASSET_VERSION = os.environ.get("CHAPTER_TRACKER_ASSET_VERSION", "1")
 _scheduler = None
 _scheduler_lock = Lock()
 _scheduler_started = False
+client_rooms = {}
 _scheduler = None
 _scheduler_lock = Lock()
 _scheduler_started = False
@@ -516,6 +517,26 @@ def remove_link(category=None):
     data = request.json
     db.remove_link(data["url"])
     return jsonify({"status": "success"})
+
+
+@socketio.on("subscribe_category")
+def handle_subscribe_category(payload):
+    category = (payload or {}).get("category")
+    room = category_room_name(category)
+    sid = request.sid
+    previous = client_rooms.get(sid)
+    if previous and previous != room:
+        leave_room(previous)
+    client_rooms[sid] = room
+    join_room(room)
+
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    sid = request.sid
+    room = client_rooms.pop(sid, None)
+    if room:
+        leave_room(room)
 
 # --------------------- Routes ---------------------
 

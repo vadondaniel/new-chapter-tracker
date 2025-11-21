@@ -375,6 +375,19 @@ function getCurrentCategory() {
   return document.body?.dataset.category || "main";
 }
 
+function subscribeToCategoryChannel() {
+  if (!socket || typeof socket.emit !== "function") return;
+  socket.emit("subscribe_category", { category: getCurrentCategory() });
+}
+
+socket.on("connect", () => {
+  subscribeToCategoryChannel();
+});
+
+if (socket.connected) {
+  subscribeToCategoryChannel();
+}
+
 socket.on("update_progress", function (data) {
   const targetCategory = data?.category || "main";
   if (targetCategory !== getCurrentCategory()) {

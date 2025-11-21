@@ -18,6 +18,11 @@ logging.basicConfig(level=logging.INFO)
 update_in_progress = False
 socketio = None  # Set externally
 
+
+def category_room_name(category=None):
+    name = str(category or "main").strip().lower() or "main"
+    return f"category:{name}"
+
 # --------------------- Selenium Manager ---------------------
 
 
@@ -208,6 +213,8 @@ def scrape_all_links(links, previous_data, force_update=False, category=None):
     failures = {}
     total_links = len(links)
     processed = 0
+    room = category_room_name(category)
+    category_name = (category or "main")
 
     for link in links:
         entry = previous_data.get(link["url"], {})
@@ -216,8 +223,13 @@ def scrape_all_links(links, previous_data, force_update=False, category=None):
         if socketio:
             socketio.emit(
                 "update_progress",
-                {"current": processed, "total": total_links,
-                    "category": category or "main"},
+                {
+                    "current": processed,
+                    "total": total_links,
+                    "category": category_name,
+                },
+                namespace="/",
+                room=room,
             )
         if data:
             new_data[link["url"]] = data
@@ -225,7 +237,12 @@ def scrape_all_links(links, previous_data, force_update=False, category=None):
             failures.update(failure)
 
     if socketio:
-        socketio.emit("update_complete", {"category": category or "main"})
+        socketio.emit(
+            "update_complete",
+            {"category": category_name},
+            namespace="/",
+            room=room,
+        )
     update_in_progress = False
     logging.info("Scraping all links completed.")
     return new_data, failures
