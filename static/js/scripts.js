@@ -104,7 +104,13 @@ function formatTimestampForPreference(absolute, fallback, mode) {
     };
   }
   const now = moment();
+  const yesterday = now.clone().subtract(1, "day");
   const diffDays = Math.abs(now.diff(parsed, "days"));
+  const sameDayLabel = parsed.isSame(now, "day")
+    ? "Today"
+    : parsed.isSame(yesterday, "day")
+    ? "Yesterday"
+    : null;
   const result = {
     label: baseLabel,
     isRelative: false,
@@ -115,20 +121,18 @@ function formatTimestampForPreference(absolute, fallback, mode) {
       result.label = absolute || parsed.format("YYYY/MM/DD");
       break;
     case "today":
-      if (parsed.isSame(now, "day")) {
-        result.label = "Today";
-        result.isRelative = true;
-        break;
-      }
-      if (parsed.isSame(now.clone().subtract(1, "day"), "day")) {
-        result.label = "Yesterday";
+      if (sameDayLabel) {
+        result.label = sameDayLabel;
         result.isRelative = true;
         break;
       }
       result.label = absolute || parsed.format("YYYY/MM/DD");
       break;
     case "week":
-      if (diffDays < 7) {
+      if (sameDayLabel) {
+        result.label = sameDayLabel;
+        result.isRelative = true;
+      } else if (diffDays < 7) {
         result.label = parsed.fromNow();
         result.isRelative = true;
       } else {
@@ -136,7 +140,10 @@ function formatTimestampForPreference(absolute, fallback, mode) {
       }
       break;
     case "month":
-      if (diffDays < 31) {
+      if (sameDayLabel) {
+        result.label = sameDayLabel;
+        result.isRelative = true;
+      } else if (diffDays < 31) {
         result.label = parsed.fromNow();
         result.isRelative = true;
       } else {
@@ -144,8 +151,13 @@ function formatTimestampForPreference(absolute, fallback, mode) {
       }
       break;
     case "always":
-      result.label = parsed.fromNow();
-      result.isRelative = true;
+      if (sameDayLabel) {
+        result.label = sameDayLabel;
+        result.isRelative = true;
+      } else {
+        result.label = parsed.fromNow();
+        result.isRelative = true;
+      }
       break;
     default:
       result.label = baseLabel;
