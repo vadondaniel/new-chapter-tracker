@@ -3,3 +3,4 @@ Flask-SocketIO
 APScheduler
 selenium
 webdriver-manager
+cloudscraper
