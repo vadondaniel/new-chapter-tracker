@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 
 DOMAINS = ["royalroad.com"]
 SUPPORTS_FREE_TOGGLE = False
+SCRAPER_NAME = "Royal Road"
 
 
 def scrape(url, free_only=False):

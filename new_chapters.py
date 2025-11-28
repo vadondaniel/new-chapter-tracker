@@ -630,6 +630,16 @@ def categories_reorder():
     return jsonify({"status": "success", "categories": categories})
 
 
+@app.route("/api/supported_sites", methods=["GET"])
+def supported_sites():
+    try:
+        sites = scraping.get_supported_sites()
+    except Exception as exc:
+        logging.error("Failed to load supported sites: %s", exc)
+        return jsonify({"status": "error"}), 500
+    return jsonify(sites)
+
+
 @app.route("/<category>")
 def category_index(category):
     return index(category)

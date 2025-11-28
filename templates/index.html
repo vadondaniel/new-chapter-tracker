@@ -283,12 +283,51 @@
                   aria-label="Change category"
                 ></select>
               </label>
+              <button
+                type="button"
+                id="supportedSitesLink"
+                class="modal-helper-link"
+              >
+                Which websites are supported?
+              </button>
             </div>
             <div class="modal-actions">
               <button id="modalAddBtn"><i class="fas fa-plus"></i> Add</button>
               <button id="modalCancelBtn" class="danger">Cancel</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="supportedSitesModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="supportedSitesTitle"
+    >
+      <div
+        class="modal-backdrop"
+        id="supportedSitesBackdrop"
+        tabindex="-1"
+      ></div>
+      <div class="modal-box supported-sites-box" role="document">
+        <div class="supported-sites-header">
+          <h2 id="supportedSitesTitle">Supported Websites</h2>
+          <p>
+            These sources currently have scrapers. Start from the domains
+            listed below when adding new links.
+          </p>
+        </div>
+        <div class="supported-sites-body">
+          <div id="supportedSitesStatus" class="supported-sites-status"></div>
+          <div id="supportedSitesList" class="supported-sites-list"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="supportedSitesCloseBtn" type="button" class="danger">
+            Close
+          </button>
         </div>
       </div>
     </div>

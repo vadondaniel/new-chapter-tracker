@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 
 DOMAINS = ["ichicomi.com"]
 SUPPORTS_FREE_TOGGLE = True
+SCRAPER_NAME = "Ichicomi"
 
 FREE_ONLY_DEFAULT = True
 

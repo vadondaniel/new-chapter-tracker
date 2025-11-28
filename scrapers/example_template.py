@@ -70,6 +70,9 @@ from datetime import datetime
 
 DOMAINS = ["example.com"]
 SUPPORTS_FREE_TOGGLE = True
+SCRAPER_NAME = "Example Scraper"
+SCRAPER_NOTES = ["Some notes"]
+HIDE_IN_SUPPORTED_LIST = True
 
 
 def parse_series_page(html: str) -> Tuple[str, str]:

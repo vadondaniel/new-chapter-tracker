@@ -96,6 +96,9 @@ def load_scraper_plugins():
                 "Failed to import scraper plugin %s: %s", name, exc)
             continue
 
+        if getattr(module, "HIDE_IN_SUPPORTED_LIST", False):
+            continue
+
         scrape_func = getattr(module, "scrape", None)
         domains = getattr(module, "DOMAINS", [])
         if not callable(scrape_func) or not domains:
@@ -103,12 +106,31 @@ def load_scraper_plugins():
                 "Plugin %s missing scrape entry point or domains", name)
             continue
 
-        supports_free_toggle = getattr(module, "SUPPORTS_FREE_TOGGLE", False)
+        supports_free_toggle = getattr(
+            module, "SUPPORTS_FREE_TOGGLE", False)
+        display_name = getattr(
+            module, "SCRAPER_NAME", None) or getattr(module, "DISPLAY_NAME", None)
+        if not display_name:
+            display_name = name.replace("_", " ").replace("-", " ").title()
+
+        raw_notes = getattr(module, "SCRAPER_NOTES", None)
+        notes = []
+        if isinstance(raw_notes, str):
+            normalized = raw_notes.strip()
+            if normalized:
+                notes.append(normalized)
+        elif isinstance(raw_notes, (list, tuple, set)):
+            for entry in raw_notes:
+                text = str(entry).strip()
+                if text:
+                    notes.append(text)
 
         for domain in domains:
             registry[domain] = {
                 "scraper": scrape_func,
                 "supports_free_toggle": bool(supports_free_toggle),
+                "display_name": display_name,
+                "notes": notes,
             }
 
     if not registry:
@@ -117,6 +139,21 @@ def load_scraper_plugins():
 
 
 SCRAPERS = load_scraper_plugins()
+
+
+def get_supported_sites():
+    sites = []
+    for domain, plugin in SCRAPERS.items():
+        sites.append(
+            {
+                "domain": domain,
+                "display_name": plugin.get("display_name") or domain,
+                "supports_free_toggle": plugin.get(
+                    "supports_free_toggle", False),
+                "notes": plugin.get("notes", []),
+            }
+        )
+    return sorted(sites, key=lambda item: item["display_name"].lower())
 
 
 def _find_scraper_for_url(url: str):

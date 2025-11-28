@@ -5,6 +5,7 @@ from dateutil import parser
 
 DOMAINS = ["kemono.cr"]
 SUPPORTS_FREE_TOGGLE = False
+SCRAPER_NAME = "Kemono"
 
 
 def scrape(url, free_only=False):

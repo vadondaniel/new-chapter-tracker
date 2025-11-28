@@ -8,6 +8,8 @@ from scraper_utils import convert_to_rss_url
 
 DOMAINS = ["nyaa.si"]
 SUPPORTS_FREE_TOGGLE = False
+SCRAPER_NAME = "Nyaa"
+SCRAPER_NOTES = ["Supports search query URLs"]
 
 
 def scrape(url, free_only=False):

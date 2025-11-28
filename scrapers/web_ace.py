@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 DOMAINS = ["web-ace.jp"]
 SUPPORTS_FREE_TOGGLE = False
+SCRAPER_NAME = "Web Ace"
 
 RSS_TEMPLATE = "https://web-ace.jp/youngaceup/feed/rss/{series_id}/"
 

@@ -1651,6 +1651,18 @@ document.addEventListener("DOMContentLoaded", function () {
     : null;
   const modalCategory = document.getElementById("modalCategory");
   const modalCategoryWrapper = document.getElementById("modalCategoryWrapper");
+  const supportedSitesLink = document.getElementById("supportedSitesLink");
+  const supportedSitesModal = document.getElementById("supportedSitesModal");
+  const supportedSitesBackdrop = document.getElementById(
+    "supportedSitesBackdrop"
+  );
+  const supportedSitesCloseBtn = document.getElementById(
+    "supportedSitesCloseBtn"
+  );
+  const supportedSitesList = document.getElementById("supportedSitesList");
+  const supportedSitesStatus = document.getElementById("supportedSitesStatus");
+  let supportedSitesCache = null;
+  let supportedSitesRequest = null;
 
   function populateModalCategoryOptions(selectedValue) {
     if (!modalCategory) return;
@@ -1701,12 +1713,158 @@ document.addEventListener("DOMContentLoaded", function () {
     modalFreeOnlyWrapper.classList.toggle("hidden", !show);
   }
 
+  function setSupportedSitesLinkVisibility(show) {
+    if (!supportedSitesLink) return;
+    supportedSitesLink.hidden = !show;
+  }
+
+  function updateSupportedSitesStatus(message, isError = false) {
+    if (!supportedSitesStatus) return;
+    const text = message ? String(message) : "";
+    supportedSitesStatus.textContent = text;
+    supportedSitesStatus.hidden = !text;
+    supportedSitesStatus.classList.toggle(
+      "supported-sites-status--error",
+      Boolean(text) && Boolean(isError)
+    );
+    if (!isError) {
+      supportedSitesStatus.classList.remove("supported-sites-status--error");
+    }
+  }
+
+  function renderSupportedSitesList(entries) {
+    if (!supportedSitesList) return;
+    supportedSitesList.innerHTML = "";
+    const sites = Array.isArray(entries) ? entries : [];
+    if (sites.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "supported-sites-empty";
+      empty.textContent = "No scrapers are registered yet.";
+      supportedSitesList.appendChild(empty);
+      return;
+    }
+
+    sites.forEach((site) => {
+      if (!site) return;
+      const row = document.createElement("div");
+      row.className = "supported-site";
+
+      const header = document.createElement("div");
+      header.className = "supported-site-header";
+
+      const titleWrapper = document.createElement("div");
+      titleWrapper.className = "supported-site-title";
+
+      const nameEl = document.createElement("div");
+      nameEl.className = "supported-site-name";
+      nameEl.textContent = site.display_name || site.domain || "Unknown";
+
+      const domainEl = document.createElement("div");
+      domainEl.className = "supported-site-domain";
+      domainEl.textContent = site.domain || "";
+
+      titleWrapper.appendChild(nameEl);
+      if (domainEl.textContent) {
+        titleWrapper.appendChild(domainEl);
+      }
+
+      const flagsWrapper = document.createElement("div");
+      flagsWrapper.className = "supported-site-flags";
+      if (site.supports_free_toggle) {
+        const flag = document.createElement("span");
+        flag.className = "pill pill--accent";
+        flag.textContent = "Free chapter filter";
+        flagsWrapper.appendChild(flag);
+      }
+
+      header.appendChild(titleWrapper);
+      if (flagsWrapper.childElementCount > 0) {
+        header.appendChild(flagsWrapper);
+      }
+
+      row.appendChild(header);
+
+      const notes = Array.isArray(site.notes)
+        ? site.notes
+            .map((note) => (note ? String(note).trim() : ""))
+            .filter(Boolean)
+        : [];
+      if (notes.length > 0) {
+        const listEl = document.createElement("ul");
+        listEl.className = "supported-site-notes";
+        notes.forEach((note) => {
+          const li = document.createElement("li");
+          li.textContent = note;
+          listEl.appendChild(li);
+        });
+        row.appendChild(listEl);
+      }
+
+      supportedSitesList.appendChild(row);
+    });
+  }
+
+  async function fetchSupportedSites() {
+    if (supportedSitesCache) {
+      return supportedSitesCache;
+    }
+    if (!supportedSitesRequest) {
+      supportedSitesRequest = fetch("/api/supported_sites")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to load supported websites");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          supportedSitesCache = Array.isArray(data) ? data : [];
+          return supportedSitesCache;
+        })
+        .catch((error) => {
+          supportedSitesRequest = null;
+          throw error;
+        });
+    }
+    return supportedSitesRequest;
+  }
+
+  async function openSupportedSitesModal() {
+    if (!supportedSitesModal) return;
+    showModalElement(supportedSitesModal);
+    updateSupportedSitesStatus("Loading supported websites...");
+    try {
+      const sites = await fetchSupportedSites();
+      renderSupportedSitesList(sites);
+      if (sites.length === 0) {
+        updateSupportedSitesStatus(
+          "No scrapers registered yet. Check back soon."
+        );
+      } else {
+        updateSupportedSitesStatus("");
+      }
+    } catch (error) {
+      console.error("Error loading supported websites:", error);
+      renderSupportedSitesList([]);
+      updateSupportedSitesStatus(
+        "Unable to load supported websites right now.",
+        true
+      );
+    }
+  }
+
+  function closeSupportedSitesModal() {
+    if (supportedSitesModal) {
+      hideModalElement(supportedSitesModal);
+    }
+  }
+
   function openAddModal(showFreeOnly = true, selectedCategory = null) {
     const isEditMode = modalAddBtn && modalAddBtn.dataset.mode === "edit";
     if (modalTitle)
       modalTitle.textContent = isEditMode ? "Edit Link" : "Add New Link";
     if (!isEditMode && modalFreeOnly) modalFreeOnly.checked = false;
     setFreeOnlyVisibility(showFreeOnly);
+    setSupportedSitesLinkVisibility(!isEditMode);
     toggleCategoryPicker(isEditMode, selectedCategory || getCurrentCategory());
     showModalElement(addModal);
     setTimeout(() => modalName && modalName.focus(), 50);
@@ -1715,6 +1873,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function closeAddModal() {
     hideModalElement(addModal);
     resetModalFields();
+    setSupportedSitesLinkVisibility(true);
     if (modalAddBtn) {
       delete modalAddBtn.dataset.mode;
       delete modalAddBtn.dataset.origUrl;
@@ -1727,6 +1886,19 @@ document.addEventListener("DOMContentLoaded", function () {
     floatingBtn.addEventListener("click", () => openAddModal(true));
   if (backdrop) backdrop.addEventListener("click", closeAddModal);
   if (modalCancelBtn) modalCancelBtn.addEventListener("click", closeAddModal);
+  if (supportedSitesLink)
+    supportedSitesLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      openSupportedSitesModal();
+    });
+  if (supportedSitesCloseBtn)
+    supportedSitesCloseBtn.addEventListener("click", closeSupportedSitesModal);
+  if (supportedSitesBackdrop)
+    supportedSitesBackdrop.addEventListener("click", (evt) => {
+      if (evt.target === supportedSitesBackdrop) {
+        closeSupportedSitesModal();
+      }
+    });
 
   // submit from modal (add or edit)
   async function submitModalAdd() {
@@ -1834,12 +2006,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // close modal on Escape from document
   document.addEventListener("keydown", (e) => {
-    if (
-      e.key === "Escape" &&
-      addModal &&
-      !addModal.classList.contains("hidden")
-    )
+    if (e.key !== "Escape") return;
+    if (addModal && !addModal.classList.contains("hidden")) {
       closeAddModal();
+      return;
+    }
+    if (
+      supportedSitesModal &&
+      !supportedSitesModal.classList.contains("hidden")
+    ) {
+      closeSupportedSitesModal();
+    }
   });
 
   const historyBackdrop = document.getElementById("historyModalBackdrop");

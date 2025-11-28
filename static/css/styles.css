@@ -1545,6 +1545,108 @@ input[type="number"]::-webkit-outer-spin-button {
   color: var(--on-accent);
 }
 
+.modal-helper-link {
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--link-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.modal-helper-link:hover {
+  color: var(--link-color-hover);
+  background: inherit;
+}
+
+.supported-sites-box {
+  width: min(520px, 100%);
+}
+.supported-sites-header h2 {
+  margin-bottom: 4px;
+}
+.supported-sites-header p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted-color);
+}
+.supported-sites-body {
+  margin: 16px 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.supported-sites-status {
+  font-size: 0.9rem;
+  color: var(--muted-strong);
+}
+.supported-sites-status--error {
+  color: var(--danger-color);
+}
+.supported-sites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.supported-sites-empty {
+  font-size: 0.9rem;
+  color: var(--muted-color);
+}
+.supported-site {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--surface-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow-card);
+}
+.supported-site-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.supported-site-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.supported-site-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--heading-color);
+}
+.supported-site-domain {
+  font-size: 0.85rem;
+  color: var(--muted-alt);
+}
+.supported-site-flags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.supported-site-flags .pill {
+  font-size: 0.75rem;
+  padding: 2px 10px;
+}
+.supported-site-notes {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+.supported-site-notes li + li {
+  margin-top: 2px;
+}
+
 /* small screens: full width modal-box */
 @media (max-width: 420px) {
   .modal-box {

@@ -7,6 +7,8 @@ from scraper_utils import parse_timestamp
 
 DOMAINS = ["jnovels.com"]
 SUPPORTS_FREE_TOGGLE = False
+SCRAPER_NAME = "JNovels"
+SCRAPER_NOTES = ["Supports search query URLs"]
 
 
 def scrape(url, free_only=False):
