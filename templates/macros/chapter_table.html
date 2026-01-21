@@ -25,10 +25,24 @@ Saved Chapter' if show_found_column else 'Last Chapter' %}
           <span class="tooltiptext"></span>
         </div>
       </td>
-      <td data-label="{{ saved_label }}">{{ data.last_saved }}</td>
+      <td data-label="{{ saved_label }}">
+        {% if data.last_saved_url %}
+        <a href="{{ data.last_saved_url }}" target="_blank" class="chapter-link">
+          {{ data.last_saved }}
+        </a>
+        {% else %}
+        {{ data.last_saved }}
+        {% endif %}
+      </td>
       {% if show_found_column %}
       <td style="font-weight: 600" data-label="Last Found Chapter">
+        {% if data.last_found_url %}
+        <a href="{{ data.last_found_url }}" target="_blank" class="chapter-link">
+          {{ data.last_found }}
+        </a>
+        {% else %}
         {{ data.last_found }}
+        {% endif %}
       </td>
       {% endif %}
       <td

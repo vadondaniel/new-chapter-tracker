@@ -182,6 +182,7 @@ def process_link(link, entry, force_update=False):
             {
                 "name": link.get("name", entry.get("name", "Unknown")),
                 "last_found": entry.get("last_found", "No data"),
+                "last_found_url": entry.get("last_found_url"),
                 "timestamp": entry.get("timestamp", datetime.datetime.now().strftime("%Y/%m/%d")),
                 "free_only": free_flag,
             },
@@ -193,12 +194,13 @@ def process_link(link, entry, force_update=False):
     except Exception as exc:
         logging.error("Error scraping %s: %s", link["url"], exc)
         return None, {link["url"]: {"error": str(exc)}}
-    chapter, timestamp, success, error = normalize_scrape_result(result)
+    chapter, timestamp, success, error, chapter_url = normalize_scrape_result(result)
     if success:
         return (
             {
                 "name": link.get("name", entry.get("name", "Unknown")),
                 "last_found": chapter,
+                "last_found_url": chapter_url,
                 "timestamp": timestamp,
                 "free_only": link.get("free_only", entry.get("free_only", True)),
             },
@@ -223,16 +225,22 @@ def scrape_website(link):
 
 
 def normalize_scrape_result(result):
+    chapter_url = None
     if isinstance(result, dict):
         chapter = result.get("last_found", "No chapters found")
         timestamp = result.get(
             "timestamp", datetime.datetime.now().strftime("%Y/%m/%d"))
         success = result.get("success", True)
         error = result.get("error")
+        chapter_url = result.get("last_found_url")
     elif isinstance(result, (list, tuple)):
         chapter, timestamp = result[0], result[1]
         success = len(result) < 3 or bool(result[2])
         error = result[3] if len(result) > 3 else None
+        # If it's a tuple/list, we don't have a standard place for URL yet,
+        # but we could check if it's longer
+        if len(result) > 4:
+            chapter_url = result[4]
     else:
         chapter, timestamp, success, error = (
             str(result),
@@ -240,7 +248,7 @@ def normalize_scrape_result(result):
             True,
             None,
         )
-    return chapter, timestamp, success, error
+    return chapter, timestamp, success, error, chapter_url
 
 
 def scrape_all_links(links, previous_data, force_update=False, category=None):

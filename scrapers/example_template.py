@@ -21,8 +21,8 @@ The scraping function receives:
     source does not distinguish.
 
 It must return either:
-  1. A dict with keys `last_found`, `timestamp`, and optional `success`/`error`.
-  2. A tuple/list like `(last_found, timestamp[, success[, error]])`.
+  1. A dict with keys `last_found`, `timestamp`, and optional `success`/`error`/`last_found_url`.
+  2. A tuple/list like `(last_found, timestamp[, success[, error[, last_found_url]]])`.
 
 Recommended formats:
 
@@ -30,14 +30,15 @@ Recommended formats:
   {
       "last_found": "Chapter 20",
       "timestamp": "2025/11/17",
-      "success": True
+      "success": True,
+      "last_found_url": "https://example.com/chapter/20"
   }
   ```
 
   or
 
   ```python
-  ("Chapter 20", "2025/11/17", True)
+  ("Chapter 20", "2025/11/17", True, None, "https://example.com/chapter/20")
   ```
 
 The scraper_utils module will normalize either shape for you.

@@ -63,6 +63,7 @@ class ChapterDatabase:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 link_id INTEGER,
                 last_found TEXT,
+                last_found_url TEXT,
                 timestamp TEXT,
                 retrieved_at TEXT NOT NULL DEFAULT (datetime('now')),
                 FOREIGN KEY(link_id) REFERENCES links(id) ON DELETE CASCADE
@@ -71,6 +72,9 @@ class ChapterDatabase:
         )
         columns = [row["name"] for row in conn.execute(
             "PRAGMA table_info(scraped_entries)").fetchall()]
+        if "last_found_url" not in columns:
+            conn.execute("ALTER TABLE scraped_entries ADD COLUMN last_found_url TEXT")
+
         if "id" not in columns:
             conn.execute(
                 "ALTER TABLE scraped_entries RENAME TO scraped_entries_old")
@@ -219,10 +223,8 @@ class ChapterDatabase:
     def _ensure_links_columns(self, conn):
         columns = [row["name"] for row in conn.execute(
             "PRAGMA table_info(links)").fetchall()]
-        needed = {"added_at", "favorite", "last_attempt", "last_error"}
+        needed = {"added_at", "favorite", "last_attempt", "last_error", "last_saved_url"}
         missing = needed - set(columns)
-        if not missing:
-            return
         for col in missing:
             if col == "last_attempt":
                 conn.execute("ALTER TABLE links ADD COLUMN last_attempt TEXT")
@@ -234,6 +236,8 @@ class ChapterDatabase:
             elif col == "favorite":
                 conn.execute(
                     "ALTER TABLE links ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0")
+            elif col == "last_saved_url":
+                conn.execute("ALTER TABLE links ADD COLUMN last_saved_url TEXT")
 
     @staticmethod
     def _normalize_frequency(value):
@@ -364,6 +368,7 @@ class ChapterDatabase:
                     l.update_frequency,
                     l.free_only,
                     l.last_saved,
+                    l.last_saved_url,
                     l.last_attempt,
                     l.last_error,
                     l.added_at,
@@ -375,6 +380,13 @@ class ChapterDatabase:
                         ORDER BY se2.id DESC
                         LIMIT 1
                     ) AS last_found,
+                    (
+                        SELECT last_found_url
+                        FROM scraped_entries se2
+                        WHERE se2.link_id = l.id
+                        ORDER BY se2.id DESC
+                        LIMIT 1
+                    ) AS last_found_url,
                     (
                         SELECT timestamp
                         FROM scraped_entries se2
@@ -394,11 +406,13 @@ class ChapterDatabase:
                 "update_frequency": row["update_frequency"],
                 "free_only": bool(row["free_only"]),
                 "last_saved": row["last_saved"],
+                "last_saved_url": row["last_saved_url"],
                 "last_attempt": row["last_attempt"],
                 "last_error": row["last_error"],
                 "added_at": row["added_at"],
                 "favorite": bool(row["favorite"]),
                 "last_found": row["last_found"] or "No data",
+                "last_found_url": row["last_found_url"],
                 "timestamp": row["timestamp"] or datetime.datetime.now().strftime("%Y/%m/%d"),
             }
         return result
@@ -407,7 +421,7 @@ class ChapterDatabase:
         with self._connect() as conn:
             link = conn.execute(
                 """
-                SELECT id, url, name, last_saved, last_attempt, added_at, update_frequency, free_only
+                SELECT id, url, name, last_saved, last_saved_url, last_attempt, added_at, update_frequency, free_only
                 FROM links
                 WHERE url = ?
                 """,
@@ -417,7 +431,7 @@ class ChapterDatabase:
                 return None
             entries = conn.execute(
                 """
-                SELECT id, last_found, timestamp, retrieved_at
+                SELECT id, last_found, last_found_url, timestamp, retrieved_at
                 FROM scraped_entries
                 WHERE link_id = ?
                 ORDER BY id DESC
@@ -429,6 +443,7 @@ class ChapterDatabase:
             "url": link["url"],
             "name": link["name"],
             "last_saved": link["last_saved"],
+            "last_saved_url": link["last_saved_url"],
             "last_attempt": link["last_attempt"],
             "added_at": link["added_at"],
             "update_frequency": link["update_frequency"],
@@ -437,6 +452,7 @@ class ChapterDatabase:
                 {
                     "entry_id": row["id"],
                     "last_found": row["last_found"],
+                    "last_found_url": row["last_found_url"],
                     "timestamp": row["timestamp"],
                     "retrieved_at": row["retrieved_at"],
                     "is_latest": row["id"] == latest_id,
@@ -452,7 +468,7 @@ class ChapterDatabase:
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT id, last_found
+                SELECT id, last_found, last_found_url
                 FROM scraped_entries
                 WHERE link_id = ? AND id = ?
                 """,
@@ -492,6 +508,7 @@ class ChapterDatabase:
         last_found: str,
         timestamp: str,
         retrieved_at: Optional[str] = None,
+        last_found_url: Optional[str] = None,
     ):
         link_id = self._get_link_id(url)
         if not link_id:
@@ -499,19 +516,22 @@ class ChapterDatabase:
         retrieved_at = retrieved_at or datetime.datetime.now().isoformat()
         with self._connect() as conn:
             existing = conn.execute(
-                "SELECT last_found, timestamp FROM scraped_entries WHERE link_id = ? ORDER BY id DESC LIMIT 1",
+                "SELECT last_found, timestamp, last_found_url FROM scraped_entries WHERE link_id = ? ORDER BY id DESC LIMIT 1",
                 (link_id,),
             ).fetchone()
-            if existing and existing["last_found"] == last_found and existing[
-                "timestamp"
-            ] == timestamp:
+            if (
+                existing
+                and existing["last_found"] == last_found
+                and existing["timestamp"] == timestamp
+                and existing["last_found_url"] == last_found_url
+            ):
                 return
             conn.execute(
                 """
-                INSERT INTO scraped_entries (link_id, last_found, timestamp, retrieved_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO scraped_entries (link_id, last_found, last_found_url, timestamp, retrieved_at)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (link_id, last_found, timestamp, retrieved_at),
+                (link_id, last_found, last_found_url, timestamp, retrieved_at),
             )
 
     def record_failures(self, failures: Dict[str, Dict]):
@@ -552,17 +572,24 @@ class ChapterDatabase:
                     WHERE link_id = links.id
                     ORDER BY id DESC
                     LIMIT 1
+                ),
+                last_saved_url = (
+                    SELECT last_found_url
+                    FROM scraped_entries
+                    WHERE link_id = links.id
+                    ORDER BY id DESC
+                    LIMIT 1
                 )
                 WHERE url = ?
                 """,
                 (url,),
             )
 
-    def set_last_saved(self, url: str, value: str):
+    def set_last_saved(self, url: str, value: str, chapter_url: Optional[str] = None):
         with self._connect() as conn:
             conn.execute(
-                "UPDATE links SET last_saved = ? WHERE url = ?",
-                (value or "N/A", url),
+                "UPDATE links SET last_saved = ?, last_saved_url = ? WHERE url = ?",
+                (value or "N/A", chapter_url, url),
             )
 
     def update_link_metadata(
@@ -601,7 +628,11 @@ class ChapterDatabase:
             if "free_only" in entry:
                 self.update_link_metadata(url, free_only=entry["free_only"])
             self.update_scraped_entry(
-                url, entry["last_found"], entry["timestamp"])
+                url,
+                entry["last_found"],
+                entry["timestamp"],
+                last_found_url=entry.get("last_found_url"),
+            )
             self.record_success(url, entry.get("retrieved_at"))
 
     def get_categories(self) -> List[Dict[str, Any]]:

@@ -1347,7 +1347,17 @@ function openHistoryModal(data, supportsFree) {
 
         const titleEl = document.createElement("div");
         titleEl.className = "history-entry__title";
-        titleEl.textContent = entry.last_found || "No chapter data";
+        if (entry.last_found_url) {
+          const link = document.createElement("a");
+          link.href = entry.last_found_url;
+          link.target = "_blank";
+          link.className = "chapter-link";
+          link.textContent = entry.last_found || "No chapter data";
+          link.addEventListener("click", (ev) => ev.stopPropagation());
+          titleEl.appendChild(link);
+        } else {
+          titleEl.textContent = entry.last_found || "No chapter data";
+        }
 
         const metaEl = document.createElement("div");
         metaEl.className = "history-entry__meta";

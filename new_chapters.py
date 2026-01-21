@@ -479,7 +479,7 @@ def history_set_saved(category=None):
     entry = db.get_history_entry(url, entry_id)
     if not entry:
         return jsonify({"status": "missing"}), 404
-    db.set_last_saved(url, entry["last_found"] or "N/A")
+    db.set_last_saved(url, entry["last_found"] or "N/A", chapter_url=entry.get("last_found_url"))
     return jsonify({"status": "success"})
 
 

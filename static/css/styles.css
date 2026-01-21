@@ -1777,6 +1777,15 @@ a:visited {
   color: var(--accent-color);
 }
 
+.chapter-link {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.chapter-link:hover {
+  text-decoration: underline;
+}
+
 /* ========= Tooltip ========= */
 /* Generic tooltip container */
 .tooltip,
