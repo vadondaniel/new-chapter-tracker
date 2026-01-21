@@ -4,13 +4,11 @@ import math
 import logging
 import sqlite3
 import atexit
-import atexit
 from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
 from flask_socketio import SocketIO, join_room, leave_room
 from apscheduler.schedulers.background import BackgroundScheduler
-from threading import Lock
 from threading import Lock
 
 from scraping import process_link, scrape_all_links, category_room_name
@@ -33,9 +31,6 @@ _scheduler = None
 _scheduler_lock = Lock()
 _scheduler_started = False
 client_rooms = {}
-_scheduler = None
-_scheduler_lock = Lock()
-_scheduler_started = False
 
 # Pass the socketio object to scraping.py
 scraping.socketio = socketio
@@ -189,6 +184,13 @@ def run_update_job(category="main", force_update=False):
             logging.info(f"Scheduled update for {category} completed.")
         finally:
             db.set_category_last_checked(category, datetime.now().isoformat())
+            if socketio:
+                socketio.emit(
+                    "update_complete",
+                    {"category": category},
+                    namespace="/",
+                    room=category_room_name(category),
+                )
 
 
 def schedule_updates(force=False):
@@ -303,7 +305,7 @@ def index(category=None):
         "index.html",
         differences=view_data["differences"],
         same_data=view_data["same_data"],
-        update_in_progress=update_in_progress,
+        update_in_progress=scraping.update_in_progress,
         last_full_update=view_data["last_full_update"],
         current_category=update_type,
         current_nav_info=current_nav,

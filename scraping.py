@@ -273,13 +273,6 @@ def scrape_all_links(links, previous_data, force_update=False, category=None):
         if failure:
             failures.update(failure)
 
-    if socketio:
-        socketio.emit(
-            "update_complete",
-            {"category": category_name},
-            namespace="/",
-            room=room,
-        )
     update_in_progress = False
     logging.info("Scraping all links completed.")
     return new_data, failures
