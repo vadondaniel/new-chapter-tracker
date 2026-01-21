@@ -7,7 +7,7 @@ import atexit
 from functools import wraps
 from datetime import datetime, timedelta
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session, make_response
 from flask_socketio import SocketIO, join_room, leave_room
 from apscheduler.schedulers.background import BackgroundScheduler
 from threading import Lock
@@ -25,6 +25,13 @@ DB_PATH = Path(DATA_DIR) / "chapters.db"
 db = ChapterDatabase(DB_PATH)
 
 app = Flask(__name__)
+app.config.update(
+    SECRET_KEY=os.environ.get("CHAPTER_TRACKER_SECRET_KEY", "dev-secret-key-change-me-123"),
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_NAME='chapter_tracker_session'
+)
 socketio = SocketIO(app)
 update_in_progress = False
 ASSET_VERSION = os.environ.get("CHAPTER_TRACKER_ASSET_VERSION", "1")
@@ -46,10 +53,23 @@ def require_auth(f):
 
         settings = db.get_settings()
         if settings.get("password_protected") == "1":
+            # Check session or fallback cookie
+            if session.get("authenticated") == "1" or request.cookies.get("chapter_auth") == "1":
+                return f(*args, **kwargs)
+
+            # Check header (for API requests from JS)
             password = request.headers.get("X-Password")
             correct_password = settings.get("password_hash")
             if not correct_password or password != correct_password:
                 return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+            # Valid password provided in header, upgrade to session and cookie for future requests
+            session["authenticated"] = "1"
+            session.permanent = True
+            
+            resp = make_response(f(*args, **kwargs))
+            resp.set_cookie("chapter_auth", "1", max_age=30*24*60*60, httponly=True, samesite='Lax')
+            return resp
         return f(*args, **kwargs)
     return decorated
 
@@ -311,12 +331,15 @@ def build_view_data(update_type):
 def index(category=None):
     update_type = resolve_category(category)
     settings = db.get_settings()
+    
+    is_local = request.remote_addr in ("127.0.0.1", "::1")
     is_protected = settings.get("password_protected") == "1"
+    is_authenticated = is_local or session.get("authenticated") == "1" or request.cookies.get("chapter_auth") == "1"
 
     nav_categories = build_nav_context()
 
-    if is_protected:
-        # Return shell without data if protected
+    if is_protected and not is_authenticated:
+        # Return shell without data if protected and not authenticated
         # The frontend will fetch data via API after auth
         return render_template(
             "index.html",
@@ -750,7 +773,11 @@ def auth_api():
     correct_password = settings.get("password_hash")
 
     if not correct_password or password == correct_password:
-        return jsonify({"status": "success"})
+        session["authenticated"] = "1"
+        session.permanent = True
+        resp = make_response(jsonify({"status": "success"}))
+        resp.set_cookie("chapter_auth", "1", max_age=30*24*60*60, httponly=True, samesite='Lax')
+        return resp
     return jsonify({"status": "error", "message": "Invalid password"}), 401
 
 
@@ -840,8 +867,24 @@ def _start_scheduler_hook():
 # Use before_request as a reliable way to ensure scheduler starts on first request
 # since before_first_request is deprecated/removed in Flask 2.3+
 @app.before_request
-def ensure_scheduler_started():
+def before_request_hooks():
     _start_scheduler_hook()
+    
+    # Sync session from fallback cookie if needed
+    if session.get("authenticated") != "1" and request.cookies.get("chapter_auth") == "1":
+        session["authenticated"] = "1"
+        session.permanent = True
+
+
+@app.after_request
+def set_cache_headers(response):
+    # Disable caching for the main page and API to ensure auth state is always fresh
+    # This prevents the browser from showing a cached "skeleton" page
+    if request.endpoint in ("main_index", "category_index", "chapter_data"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 
 # --------------------- Startup ---------------------

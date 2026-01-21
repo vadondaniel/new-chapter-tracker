@@ -6,6 +6,7 @@ let currentPassword = localStorage.getItem("chapterAuthPassword") || "";
 let categoryData = Array.isArray(window.initialCategoryData)
   ? window.initialCategoryData
   : [];
+setPrefixesFromCategories(categoryData);
 window.currentNavInfo = window.currentNavInfo || null;
 const DEFAULT_THEME = "auto";
 const DEFAULT_ACCENT = "emerald";
@@ -2185,6 +2186,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const authSubmitBtn = document.getElementById("authSubmitBtn");
 
   async function checkAuth() {
+    // If the body doesn't have auth-required, the server already gave us the data
+    if (!document.body.classList.contains("auth-required")) {
+      onAuthenticated(false);
+      return;
+    }
+
     const savedPassword = localStorage.getItem("chapterAuthPassword");
     const res = await fetch("/api/settings");
     const settings = await res.json();
@@ -2192,28 +2199,32 @@ document.addEventListener("DOMContentLoaded", function () {
     if (settings.auth_required) {
       if (savedPassword) {
         // Optimistically set password and try to load data
-        // If it fails, we'll show the modal then
         currentPassword = savedPassword;
         const response = await fetch("/api/categories", {
           headers: { "X-Password": currentPassword },
         });
         if (response.ok) {
-          onAuthenticated();
+          onAuthenticated(true);
           return;
         }
       }
       showModalElement(authModal);
     } else {
-      onAuthenticated();
+      onAuthenticated(true);
     }
   }
 
-  function onAuthenticated() {
+  function onAuthenticated(forceFetch = false) {
     const shell = document.getElementById("mainShell");
+    const wasHidden = shell && shell.classList.contains("hidden");
     if (shell) shell.classList.remove("hidden");
     document.body.classList.remove("auth-required");
-    loadPrefixes();
-    refreshChapterTables().catch(console.error);
+
+    // Only fetch if we were hidden (just logged in) or explicitly requested
+    if (wasHidden || forceFetch) {
+      loadPrefixes();
+      refreshChapterTables().catch(console.error);
+    }
   }
 
   const handleAuthSubmit = async () => {
@@ -2230,7 +2241,7 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem("chapterAuthPassword", password);
       }
       hideModalElement(authModal);
-      onAuthenticated();
+      onAuthenticated(true);
     } else {
       alert("Invalid password");
     }
