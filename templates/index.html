@@ -114,9 +114,10 @@
   <body
     data-category="{{ current_category }}"
     data-last-update="{{ last_full_update }}"
+    {% if password_protected %}class="auth-required"{% endif %}
   >
     {% from "macros/chapter_table.html" import render_chapter_table %}
-    <div class="layout-shell">
+    <div class="layout-shell {% if password_protected %}hidden{% endif %}" id="mainShell">
       <nav
         class="category-nav"
         id="categoryNav"
@@ -492,6 +493,107 @@
             </button>
           </div>
         </section>
+
+        <section class="settings-section settings-section--advanced">
+          <div class="settings-section__header">
+            <div class="settings-section__intro">
+              <h3>Advanced</h3>
+            </div>
+            <button
+              type="button"
+              id="openAdvancedSettingsBtn"
+              class="settings-launcher"
+            >
+              <i class="fas fa-tools"></i>
+              Advanced Options
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div
+      id="advancedSettingsModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="advancedSettingsTitle"
+    >
+      <div
+        class="modal-backdrop"
+        id="advancedSettingsBackdrop"
+        tabindex="-1"
+      ></div>
+      <div class="modal-box settings-box" role="document">
+        <h2 id="advancedSettingsTitle">Advanced Settings</h2>
+
+        <section class="settings-section">
+          <h3>Network</h3>
+          <div class="modal-body">
+            <label class="modal-checkbox checkbox-field">
+              <input type="checkbox" id="settingShareLocal" />
+              <span class="custom-checkbox" aria-hidden="true"></span>
+              <span>Share on local network</span>
+            </label>
+            <label class="modal-field">
+              <span class="modal-field-label">Port</span>
+              <input type="number" id="settingPort" placeholder="555" />
+            </label>
+            <p class="settings-helper-text">
+              Requires restart to take effect.
+            </p>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3>Security</h3>
+          <div class="modal-body">
+            <label class="modal-checkbox checkbox-field">
+              <input type="checkbox" id="settingPasswordProtected" />
+              <span class="custom-checkbox" aria-hidden="true"></span>
+              <span>Enable Password Protection on Network</span>
+            </label>
+            <div id="passwordFields" class="hidden">
+              <label class="modal-field">
+                <span class="modal-field-label">New Password</span>
+                <input type="password" id="settingPassword" placeholder="Leave empty to keep current" />
+              </label>
+            </div>
+            <p class="settings-helper-text">
+              Asks for password when not accessed through "localhost" or "127.0.0.1".
+            </p>
+          </div>
+        </section>
+
+        <div class="modal-actions">
+          <button id="saveAdvancedSettingsBtn">Save & Apply</button>
+          <button id="advancedSettingsCancelBtn" class="danger">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="authModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="authModalTitle"
+    >
+      <div class="modal-backdrop" id="authModalBackdrop"></div>
+      <div class="modal-box" role="document">
+        <h2 id="authModalTitle">Password Required</h2>
+        <div class="modal-body">
+          <p>This instance is password protected.</p>
+          <input type="password" id="authPassword" placeholder="Password" />
+          <label class="modal-checkbox checkbox-field">
+            <input type="checkbox" id="authRemember" />
+            <span class="custom-checkbox" aria-hidden="true"></span>
+            <span>Remember me</span>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button id="authSubmitBtn">Login</button>
+        </div>
       </div>
     </div>
 

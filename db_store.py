@@ -49,6 +49,7 @@ class ChapterDatabase:
             self._ensure_links_columns(conn)
             self._ensure_scraped_entries_table(conn)
             self._ensure_categories_table(conn)
+            self._ensure_settings_table(conn)
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_links_category ON links(category)")
             conn.execute(
@@ -108,6 +109,28 @@ class ChapterDatabase:
         )
         self._ensure_category_columns(conn)
         self._seed_categories(conn)
+
+    def _ensure_settings_table(self, conn):
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+            """
+        )
+        # Seed default settings if they don't exist
+        defaults = {
+            "password_protected": "0",
+            "password_hash": "",
+            "share_local": "0",
+            "port": "555"
+        }
+        for key, val in defaults.items():
+            conn.execute(
+                "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
+                (key, val)
+            )
 
     def _ensure_category_columns(self, conn):
         columns = {
@@ -785,3 +808,15 @@ class ChapterDatabase:
                     (position, name),
                 )
         return self.get_categories()
+
+    def get_settings(self) -> Dict[str, str]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT key, value FROM settings").fetchall()
+        return {row["key"]: row["value"] for row in rows}
+
+    def update_setting(self, key: str, value: str):
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                (key, str(value))
+            )

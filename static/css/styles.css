@@ -997,11 +997,11 @@ body.backdrop-blur .modal-backdrop {
   flex-wrap: wrap;
 }
 
-/*.settings-helper-text {
+.settings-helper-text {
   margin: 8px 0 0;
   color: var(--muted-color);
   font-size: 0.9rem;
-}*/
+}
 
 .pill-option {
   display: inline-flex;
@@ -1091,7 +1091,8 @@ body.backdrop-blur .modal-backdrop {
   justify-content: space-between;
   gap: 12px;
 }
-.settings-section--categories .settings-section__header {
+.settings-section--categories .settings-section__header,
+.settings-section--advanced .settings-section__header{
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
@@ -1104,6 +1105,10 @@ body.backdrop-blur .modal-backdrop {
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 0.85rem;
+}
+
+.settings-field {
+  margin-bottom: 12px;
 }
 
 .settings-section__intro p,

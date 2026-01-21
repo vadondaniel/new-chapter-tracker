@@ -2,6 +2,7 @@ var socket = io();
 
 let PREFIXES = [];
 let historyContext = null;
+let currentPassword = localStorage.getItem("chapterAuthPassword") || "";
 let categoryData = Array.isArray(window.initialCategoryData)
   ? window.initialCategoryData
   : [];
@@ -320,7 +321,10 @@ applyAccentPreference(initialAccentChoice);
 markActiveAccent(initialAccentChoice);
 
 async function loadPrefixes() {
-  const response = await fetch("/api/categories");
+  const response = await fetch("/api/categories", {
+    headers: { "X-Password": currentPassword },
+  });
+  if (!response.ok) return;
   const categories = await response.json();
   if (Array.isArray(categories)) {
     categoryData = categories;
@@ -329,16 +333,10 @@ async function loadPrefixes() {
   setPrefixesFromCategories(categories);
 }
 
-if (Array.isArray(categoryData) && categoryData.length > 0) {
-  setPrefixesFromCategories(categoryData);
-}
-
-loadPrefixes();
-renderCategoryNav(categoryData);
-setPrefixesFromCategories(categoryData);
-
 async function refreshCategoriesFromServer() {
-  const response = await fetch("/api/categories");
+  const response = await fetch("/api/categories", {
+    headers: { "X-Password": currentPassword },
+  });
   if (!response.ok) {
     throw new Error("Failed to load categories");
   }
@@ -417,7 +415,10 @@ function updateChapter(url) {
   const path = actionPath("update");
   fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Password": currentPassword,
+    },
     body: JSON.stringify({ url: url, timestamp: new Date().toISOString() }),
   })
     .then((response) => response.json())
@@ -433,7 +434,10 @@ function recheckChapter(url) {
   const path = actionPath("recheck");
   fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Password": currentPassword,
+    },
     body: JSON.stringify({ url: url }),
   })
     .then((response) => response.json())
@@ -453,7 +457,10 @@ function addLink() {
   const path = actionPath("add");
   fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Password": currentPassword,
+    },
     body: JSON.stringify({ name, url }),
   })
     .then((response) => response.json())
@@ -469,7 +476,10 @@ function removeLink() {
   const path = actionPath("remove");
   fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Password": currentPassword,
+    },
     body: JSON.stringify({ url }),
   })
     .then((response) => response.json())
@@ -487,7 +497,10 @@ function removeLinkByUrl(url) {
   const path = actionPath("remove");
   fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Password": currentPassword,
+    },
     body: JSON.stringify({ url }),
   })
     .then((r) => r.json())
@@ -512,7 +525,10 @@ function toggleFavorite(url, container) {
   const path = actionPath("favorite");
   fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Password": currentPassword,
+    },
     body: JSON.stringify({ url, favorite: !isFavorite }),
   })
     .then((response) => response.json())
@@ -876,7 +892,10 @@ function initRowEnhancements(root = document) {
 async function refreshChapterTables() {
   const category = getCurrentCategory();
   const response = await fetch(
-    `/api/chapters?category=${encodeURIComponent(category)}`
+    `/api/chapters?category=${encodeURIComponent(category)}`,
+    {
+      headers: { "X-Password": currentPassword },
+    }
   );
   if (!response.ok) {
     throw new Error("Unable to refresh chapters");
@@ -965,7 +984,10 @@ async function persistCategoryOrder(order) {
   try {
     const res = await fetch("/api/categories/reorder", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Password": currentPassword,
+      },
       body: JSON.stringify({ order }),
     });
     const data = await res.json();
@@ -1220,7 +1242,10 @@ async function saveCategoryRow(row) {
     if (saveBtn) saveBtn.disabled = true;
     const res = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Password": currentPassword,
+      },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -1252,6 +1277,7 @@ async function deleteCategoryRow(row) {
   try {
     const res = await fetch(`/api/categories/${encodeURIComponent(name)}`, {
       method: "DELETE",
+      headers: { "X-Password": currentPassword },
     });
     const data = await res.json();
     if (!res.ok || data.status !== "success") {
@@ -1395,7 +1421,10 @@ async function fetchHistory(url) {
   const path = actionPath("history");
   const response = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Password": currentPassword,
+    },
     body: JSON.stringify({ url }),
   });
   const payload = await response.json();
@@ -1422,7 +1451,10 @@ async function performHistoryAction(action, payload, spinnerMessage) {
   try {
     const response = await fetch(actionPath(action), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Password": currentPassword,
+      },
       body: JSON.stringify({ url: historyContext.url, ...payload }),
     });
     const data = await response.json();
@@ -1479,7 +1511,10 @@ function forceUpdate() {
   const path = actionPath("force_update");
   fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Password": currentPassword,
+    },
   })
     .then((response) => response.json())
     .catch((error) => {
@@ -1937,7 +1972,10 @@ document.addEventListener("DOMContentLoaded", function () {
       if (modalAddBtn) modalAddBtn.disabled = true;
       const res = await fetch(path, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Password": currentPassword,
+        },
         body,
       });
       const data = await res.json();
@@ -2032,6 +2070,8 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("DOMContentLoaded", function () {
   const settingsModal = document.getElementById("settingsModal");
   const settingsBackdrop = document.getElementById("settingsModalBackdrop");
+  const advancedModal = document.getElementById("advancedSettingsModal");
+  const authModal = document.getElementById("authModal");
   const openSettingsBtn = document.getElementById("openSettingsBtn");
   const closeSettingsBtn = document.getElementById("settingsCloseBtn");
   const openCategoryBtn = document.getElementById("openCategoryManagerBtn");
@@ -2123,6 +2163,134 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (categoryModal && !categoryModal.classList.contains("hidden")) {
       closeCategoryModal();
+    }
+    if (advancedModal && !advancedModal.classList.contains("hidden")) {
+      hideModalElement(advancedModal);
+    }
+  });
+
+  // Advanced Settings Logic
+  const openAdvancedBtn = document.getElementById("openAdvancedSettingsBtn");
+  const advancedBackdrop = document.getElementById("advancedSettingsBackdrop");
+  const advancedCancelBtn = document.getElementById("advancedSettingsCancelBtn");
+  const saveAdvancedBtn = document.getElementById("saveAdvancedSettingsBtn");
+  const settingShareLocal = document.getElementById("settingShareLocal");
+  const settingPort = document.getElementById("settingPort");
+  const settingPasswordProtected = document.getElementById("settingPasswordProtected");
+  const settingPassword = document.getElementById("settingPassword");
+  const passwordFields = document.getElementById("passwordFields");
+
+  const authPassword = document.getElementById("authPassword");
+  const authRemember = document.getElementById("authRemember");
+  const authSubmitBtn = document.getElementById("authSubmitBtn");
+
+  async function checkAuth() {
+    const savedPassword = localStorage.getItem("chapterAuthPassword");
+    const res = await fetch("/api/settings");
+    const settings = await res.json();
+
+    if (settings.auth_required) {
+      if (savedPassword) {
+        // Optimistically set password and try to load data
+        // If it fails, we'll show the modal then
+        currentPassword = savedPassword;
+        const response = await fetch("/api/categories", {
+          headers: { "X-Password": currentPassword },
+        });
+        if (response.ok) {
+          onAuthenticated();
+          return;
+        }
+      }
+      showModalElement(authModal);
+    } else {
+      onAuthenticated();
+    }
+  }
+
+  function onAuthenticated() {
+    const shell = document.getElementById("mainShell");
+    if (shell) shell.classList.remove("hidden");
+    document.body.classList.remove("auth-required");
+    loadPrefixes();
+    refreshChapterTables().catch(console.error);
+  }
+
+  const handleAuthSubmit = async () => {
+    const password = authPassword.value;
+    const res = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    if (res.ok) {
+      currentPassword = password;
+      if (authRemember.checked) {
+        localStorage.setItem("chapterAuthPassword", password);
+      }
+      hideModalElement(authModal);
+      onAuthenticated();
+    } else {
+      alert("Invalid password");
+    }
+  };
+
+  authSubmitBtn?.addEventListener("click", handleAuthSubmit);
+  authPassword?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handleAuthSubmit();
+  });
+
+  checkAuth();
+
+  openAdvancedBtn?.addEventListener("click", async () => {
+    const res = await fetch("/api/settings", {
+      headers: { "X-Password": currentPassword },
+    });
+    const settings = await res.json();
+
+    settingShareLocal.checked = settings.share_local;
+    settingPort.value = settings.port;
+    settingPasswordProtected.checked = settings.password_protected;
+    passwordFields.classList.toggle("hidden", !settings.password_protected);
+    settingPassword.value = "";
+
+    showModalElement(advancedModal);
+  });
+
+  settingPasswordProtected?.addEventListener("change", () => {
+    passwordFields.classList.toggle("hidden", !settingPasswordProtected.checked);
+  });
+
+  advancedCancelBtn?.addEventListener("click", () => hideModalElement(advancedModal));
+  advancedBackdrop?.addEventListener("click", (e) => {
+    if (e.target === advancedBackdrop) hideModalElement(advancedModal);
+  });
+
+  saveAdvancedBtn?.addEventListener("click", async () => {
+    const payload = {
+      share_local: settingShareLocal.checked,
+      port: settingPort.value,
+      password_protected: settingPasswordProtected.checked,
+      password: settingPassword.value,
+    };
+
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Password": currentPassword,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      hideModalElement(advancedModal);
+      if (confirm("Settings saved. Restart server to apply network changes? (Manual restart required)")) {
+        // In a real app we might trigger a restart, but here we just inform
+      }
+    } else {
+      alert("Failed to save settings");
     }
   });
 });

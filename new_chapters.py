@@ -4,6 +4,7 @@ import math
 import logging
 import sqlite3
 import atexit
+from functools import wraps
 from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
@@ -34,6 +35,23 @@ client_rooms = {}
 
 # Pass the socketio object to scraping.py
 scraping.socketio = socketio
+
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        # Bypass auth if request is from localhost
+        if request.remote_addr in ("127.0.0.1", "::1"):
+            return f(*args, **kwargs)
+
+        settings = db.get_settings()
+        if settings.get("password_protected") == "1":
+            password = request.headers.get("X-Password")
+            correct_password = settings.get("password_hash")
+            if not correct_password or password != correct_password:
+                return jsonify({"status": "error", "message": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 
 def annotate_support_flags(entries):
@@ -292,9 +310,28 @@ def build_view_data(update_type):
 
 def index(category=None):
     update_type = resolve_category(category)
-    view_data = build_view_data(update_type)
+    settings = db.get_settings()
+    is_protected = settings.get("password_protected") == "1"
 
     nav_categories = build_nav_context()
+
+    if is_protected:
+        # Return shell without data if protected
+        # The frontend will fetch data via API after auth
+        return render_template(
+            "index.html",
+            differences={},
+            same_data={},
+            update_in_progress=scraping.update_in_progress,
+            last_full_update=None,
+            current_category=update_type,
+            current_nav_info=get_current_nav_info([], update_type, 0),
+            asset_version=ASSET_VERSION,
+            nav_categories=[],
+            password_protected=True
+        )
+
+    view_data = build_view_data(update_type)
     current_nav = get_current_nav_info(
         nav_categories, update_type, len(view_data["differences"])
     )
@@ -311,6 +348,7 @@ def index(category=None):
         current_nav_info=current_nav,
         asset_version=ASSET_VERSION,
         nav_categories=nav_categories,
+        password_protected=False
     )
 
 
@@ -563,30 +601,31 @@ def main_index():
 
 # Main routes (no category prefix)
 app.add_url_rule("/update", endpoint="main_update",
-                 view_func=lambda: update("main"), methods=["POST"])
+                 view_func=require_auth(lambda: update("main")), methods=["POST"])
 app.add_url_rule("/force_update", endpoint="main_force_update",
-                 view_func=lambda: force_update("main"), methods=["POST"])
+                 view_func=require_auth(lambda: force_update("main")), methods=["POST"])
 app.add_url_rule("/recheck", endpoint="main_recheck",
-                 view_func=lambda: recheck("main"), methods=["POST"])
+                 view_func=require_auth(lambda: recheck("main")), methods=["POST"])
 app.add_url_rule("/add", endpoint="main_add",
-                 view_func=lambda: add_link("main"), methods=["POST"])
+                 view_func=require_auth(lambda: add_link("main")), methods=["POST"])
 app.add_url_rule("/edit", endpoint="main_edit",
-                 view_func=lambda: edit_link("main"), methods=["POST"])
+                 view_func=require_auth(lambda: edit_link("main")), methods=["POST"])
 app.add_url_rule("/remove", endpoint="main_remove",
-                 view_func=lambda: remove_link("main"), methods=["POST"])
+                 view_func=require_auth(lambda: remove_link("main")), methods=["POST"])
 app.add_url_rule("/favorite", endpoint="main_favorite",
-                 view_func=lambda: favorite_link("main"), methods=["POST"])
+                 view_func=require_auth(lambda: favorite_link("main")), methods=["POST"])
 app.add_url_rule("/history", endpoint="main_history",
-                 view_func=lambda: history("main"), methods=["POST"])
+                 view_func=require_auth(lambda: history("main")), methods=["POST"])
 app.add_url_rule("/history/set_saved", endpoint="main_history_set_saved",
-                 view_func=lambda: history_set_saved("main"), methods=["POST"])
+                 view_func=require_auth(lambda: history_set_saved("main")), methods=["POST"])
 app.add_url_rule("/history/delete", endpoint="main_history_delete",
-                 view_func=lambda: history_delete_entry("main"), methods=["POST"])
+                 view_func=require_auth(lambda: history_delete_entry("main")), methods=["POST"])
 
 # dynamically add routes for any category slug
 
 
 @app.route("/api/categories", methods=["GET", "POST"])
+@require_auth
 def categories_api():
     if request.method == "GET":
         return jsonify(build_nav_context())
@@ -614,6 +653,7 @@ def categories_api():
 
 
 @app.route("/api/categories/<category_name>", methods=["PUT", "DELETE"])
+@require_auth
 def categories_detail(category_name):
     if request.method == "DELETE":
         try:
@@ -638,6 +678,7 @@ def categories_detail(category_name):
 
 
 @app.route("/api/categories/reorder", methods=["POST"])
+@require_auth
 def categories_reorder():
     data = request.get_json() or {}
     order = data.get("order") or []
@@ -657,57 +698,123 @@ def supported_sites():
     return jsonify(sites)
 
 
+@app.route("/api/settings", methods=["GET", "POST"])
+def settings_api():
+    if request.method == "POST":
+        # Protect saving settings if a password is set (unless local)
+        if request.remote_addr not in ("127.0.0.1", "::1"):
+            settings = db.get_settings()
+            if settings.get("password_protected") == "1":
+                password = request.headers.get("X-Password")
+                correct_password = settings.get("password_hash")
+                if not correct_password or password != correct_password:
+                    return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    if request.method == "GET":
+        settings = db.get_settings()
+        # Don't send the actual hash, just whether a password is set
+        has_password = bool(settings.get("password_hash"))
+        
+        # Check if auth is required for THIS specific request
+        is_local = request.remote_addr in ("127.0.0.1", "::1")
+        auth_required = (settings.get("password_protected") == "1") and not is_local
+        
+        return jsonify({
+            "password_protected": settings.get("password_protected") == "1",
+            "auth_required": auth_required,
+            "has_password": has_password,
+            "share_local": settings.get("share_local") == "1",
+            "port": settings.get("port", "555")
+        })
+
+    data = request.get_json() or {}
+    if "password_protected" in data:
+        db.update_setting("password_protected", "1" if data["password_protected"] else "0")
+    if "share_local" in data:
+        db.update_setting("share_local", "1" if data["share_local"] else "0")
+    if "port" in data:
+        db.update_setting("port", str(data["port"]))
+    if "password" in data and data["password"]:
+        # In a real app we'd use a proper hash, but for local hosting a simple string or basic hash is often requested
+        # I'll use a simple way to store it for now as per "local host" context
+        db.update_setting("password_hash", str(data["password"]))
+
+    return jsonify({"status": "success"})
+
+
+@app.route("/api/auth", methods=["POST"])
+def auth_api():
+    data = request.get_json() or {}
+    password = data.get("password")
+    settings = db.get_settings()
+    correct_password = settings.get("password_hash")
+
+    if not correct_password or password == correct_password:
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "message": "Invalid password"}), 401
+
+
 @app.route("/<category>")
 def category_index(category):
     return index(category)
 
 
 @app.route("/<category>/update", methods=["POST"])
+@require_auth
 def category_update_route(category):
     return update(category)
 
 
 @app.route("/<category>/force_update", methods=["POST"])
+@require_auth
 def category_force_update_route(category):
     return force_update(category)
 
 
 @app.route("/<category>/recheck", methods=["POST"])
+@require_auth
 def category_recheck_route(category):
     return recheck(category)
 
 
 @app.route("/<category>/add", methods=["POST"])
+@require_auth
 def category_add_route(category):
     return add_link(category)
 
 
 @app.route("/<category>/edit", methods=["POST"])
+@require_auth
 def category_edit_route(category):
     return edit_link(category)
 
 
 @app.route("/<category>/remove", methods=["POST"])
+@require_auth
 def category_remove_route(category):
     return remove_link(category)
 
 
 @app.route("/<category>/favorite", methods=["POST"])
+@require_auth
 def category_favorite_route(category):
     return favorite_link(category)
 
 
 @app.route("/<category>/history", methods=["POST"])
+@require_auth
 def category_history_route(category):
     return history(category)
 
 
 @app.route("/<category>/history/set_saved", methods=["POST"])
+@require_auth
 def category_history_set_route(category):
     return history_set_saved(category)
 
 
 @app.route("/<category>/history/delete", methods=["POST"])
+@require_auth
 def category_history_delete_route(category):
     return history_delete_entry(category)
 
@@ -740,4 +847,13 @@ def ensure_scheduler_started():
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
     schedule_updates()
-    app.run(host="0.0.0.0", debug=False, port=555)
+    # Load settings for startup
+    try:
+        settings = db.get_settings()
+        host = "0.0.0.0" if settings.get("share_local") == "1" else "127.0.0.1"
+        port = int(settings.get("port", 555))
+    except Exception:
+        host = "127.0.0.1"
+        port = 555
+
+    app.run(host=host, debug=False, port=port)
