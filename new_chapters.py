@@ -189,7 +189,7 @@ def run_update_job(category="main", force_update=False):
                     "update_complete",
                     {"category": category},
                     namespace="/",
-                    room=category_room_name(category),
+                    to=category_room_name(category),
                 )
 
 
@@ -280,7 +280,7 @@ def build_view_data(update_type):
         )
 
     category_info = db.get_category(update_type)
-    last_checked = category_info["last_checked"] if category_info else None
+    last_checked = category_info.get("last_checked") if category_info else None
 
     return {
         "differences": sort_entries(differences),
@@ -320,8 +320,9 @@ def chapter_data():
     update_type = resolve_category(category)
     view_data = build_view_data(update_type)
     nav_categories = build_nav_context()
+    differences = view_data.get("differences", {})
     current_nav = get_current_nav_info(
-        nav_categories, update_type, len(view_data["differences"])
+        nav_categories, update_type, len(differences)
     )
 
     differences_html = (
@@ -347,16 +348,18 @@ def chapter_data():
 
     return jsonify(
         {
-            "differences": {"count": len(view_data["differences"]), "html": differences_html},
-            "same_data": {"count": len(view_data["same_data"]), "html": same_html},
-            "last_full_update": view_data["last_full_update"],
+            "differences": {"count": len(differences), "html": differences_html},
+            "same_data": {"count": len(view_data.get("same_data", {})), "html": same_html},
+            "last_full_update": view_data.get("last_full_update"),
             "nav": {"categories": nav_categories, "current": current_nav},
         }
     )
 
 
 def update(category=None):
-    data = request.json
+    data = request.get_json()
+    if not data or "url" not in data:
+        return jsonify({"status": "error", "message": "Missing URL"}), 400
     db.mark_saved(data["url"])
     return jsonify({"status": "success"})
 
@@ -368,7 +371,9 @@ def force_update(category=None):
 
 
 def recheck(category=None):
-    data = request.json
+    data = request.get_json()
+    if not data or "url" not in data:
+        return jsonify({"status": "error", "message": "Missing URL"}), 400
     update_type = resolve_category(category)
     previous_data = db.get_scraped_data(update_type)
     entry = previous_data.get(data["url"])
@@ -390,7 +395,7 @@ def recheck(category=None):
 
 
 def history(category=None):
-    data = request.json
+    data = request.get_json() or {}
     url = data.get("url")
     if not url:
         return jsonify({"status": "missing"}), 400
@@ -401,7 +406,7 @@ def history(category=None):
 
 
 def history_set_saved(category=None):
-    data = request.json
+    data = request.get_json() or {}
     url = data.get("url")
     entry_id = data.get("entry_id")
     if not url or entry_id is None:
@@ -418,7 +423,7 @@ def history_set_saved(category=None):
 
 
 def history_delete_entry(category=None):
-    data = request.json
+    data = request.get_json() or {}
     url = data.get("url")
     entry_id = data.get("entry_id")
     if not url or entry_id is None:
@@ -437,7 +442,7 @@ def history_delete_entry(category=None):
 
 
 def favorite_link(category=None):
-    data = request.json
+    data = request.get_json() or {}
     target_url = data.get("url")
     favorite_flag = data.get("favorite")
     if target_url is None or favorite_flag is None:
@@ -451,7 +456,7 @@ def favorite_link(category=None):
 
 
 def add_link(category=None):
-    data = request.json
+    data = request.get_json() or {}
     freq, free_only = get_link_metadata(data)
     new_entry = {
         "name": data["name"],
@@ -482,10 +487,14 @@ def add_link(category=None):
 
 
 def edit_link(category=None):
-    data = request.json
+    data = request.get_json() or {}
     orig_url = data.get("original_url")
     new_url = data.get("url")
     new_name = data.get("name")
+
+    if not orig_url or not new_url or not new_name:
+        return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
     requested_category = data.get("target_category")
     valid_categories = set(db.get_category_names())
     requested_category = requested_category if requested_category in valid_categories else None
@@ -502,9 +511,9 @@ def edit_link(category=None):
                 requested_category if requested_category and requested_category != update_type else None
             )
             db.update_link(
-                orig_url,
-                new_url,
-                new_name,
+                str(orig_url),
+                str(new_url),
+                str(new_name),
                 freq,
                 free_only,
                 category=target_category,
@@ -516,8 +525,11 @@ def edit_link(category=None):
 
 
 def remove_link(category=None):
-    data = request.json
-    db.remove_link(data["url"])
+    data = request.get_json() or {}
+    url = data.get("url")
+    if not url:
+        return jsonify({"status": "error", "message": "Missing URL"}), 400
+    db.remove_link(url)
     return jsonify({"status": "success"})
 
 
@@ -525,8 +537,8 @@ def remove_link(category=None):
 def handle_subscribe_category(payload):
     category = (payload or {}).get("category")
     room = category_room_name(category)
-    sid = request.sid
-    previous = client_rooms.get(sid)
+    sid = getattr(request, "sid", None)
+    previous = client_rooms.get(sid) if sid else None
     if previous and previous != room:
         leave_room(previous)
     client_rooms[sid] = room
@@ -535,10 +547,11 @@ def handle_subscribe_category(payload):
 
 @socketio.on("disconnect")
 def handle_disconnect():
-    sid = request.sid
-    room = client_rooms.pop(sid, None)
-    if room:
-        leave_room(room)
+    sid = getattr(request, "sid", None)
+    if sid:
+        room = client_rooms.pop(sid, None)
+        if room:
+            leave_room(room)
 
 # --------------------- Routes ---------------------
 
@@ -578,18 +591,20 @@ def categories_api():
     if request.method == "GET":
         return jsonify(build_nav_context())
 
-    data = request.json or {}
+    data = request.get_json() or {}
     name = data.get("name")
+    if not name:
+        return jsonify({"status": "error", "error": "Category name is required"}), 400
     display_name = data.get("display_name")
     include_in_nav = parse_free_only(data.get("include_in_nav", True), True)
     update_interval = data.get(
         "update_interval_hours") or data.get("update_interval")
     try:
         created = db.create_category(
-            name=name,
+            name=str(name),
             display_name=display_name,
             include_in_nav=include_in_nav,
-            update_interval_hours=update_interval,
+            update_interval_hours=int(update_interval) if update_interval is not None else 1,
         )
     except sqlite3.IntegrityError:
         return jsonify({"status": "error", "error": "Category already exists"}), 400
@@ -609,7 +624,7 @@ def categories_detail(category_name):
             return jsonify({"status": "missing"}), 404
         return jsonify({"status": "success"})
 
-    data = request.json or {}
+    data = request.get_json() or {}
     updated = db.update_category_entry(
         name=category_name,
         new_name=data.get("name"),
@@ -624,7 +639,7 @@ def categories_detail(category_name):
 
 @app.route("/api/categories/reorder", methods=["POST"])
 def categories_reorder():
-    data = request.json or {}
+    data = request.get_json() or {}
     order = data.get("order") or []
     if not isinstance(order, list) or not order:
         return jsonify({"status": "error", "error": "Invalid order payload"}), 400
@@ -715,13 +730,11 @@ def _start_scheduler_hook():
     schedule_updates()
 
 
-if hasattr(app, "before_serving"):
-    app.before_serving(_start_scheduler_hook)
-elif hasattr(app, "before_first_request"):
-    app.before_first_request(_start_scheduler_hook)
-else:
-    # Fallback for very old Flask versions; harmless because schedule_updates is idempotent.
-    app.before_request(_start_scheduler_hook)
+# Use before_request as a reliable way to ensure scheduler starts on first request
+# since before_first_request is deprecated/removed in Flask 2.3+
+@app.before_request
+def ensure_scheduler_started():
+    _start_scheduler_hook()
 
 
 # --------------------- Startup ---------------------
