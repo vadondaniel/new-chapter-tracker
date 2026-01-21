@@ -34,14 +34,14 @@ def _ensure_dummy_browser_stack():
         def add_argument(self, value):
             self.arguments.append(value)
 
-    webdriver_module.Chrome = DummyDriver
-    service_module.Service = DummyChromeService
-    options_module.Options = DummyOptions
+    setattr(webdriver_module, "Chrome", DummyDriver)
+    setattr(service_module, "Service", DummyChromeService)
+    setattr(options_module, "Options", DummyOptions)
 
-    chrome_module.service = service_module
-    chrome_module.options = options_module
-    webdriver_module.chrome = chrome_module
-    selenium.webdriver = webdriver_module
+    setattr(chrome_module, "service", service_module)
+    setattr(chrome_module, "options", options_module)
+    setattr(webdriver_module, "chrome", chrome_module)
+    setattr(selenium, "webdriver", webdriver_module)
 
     sys.modules["selenium"] = selenium
     sys.modules["selenium.webdriver"] = webdriver_module
@@ -56,8 +56,8 @@ def _ensure_dummy_browser_stack():
         def install(self):
             return "/tmp/chromedriver"
 
-    chrome_manager.ChromeDriverManager = DummyChromeDriverManager
-    webdriver_manager.chrome = chrome_manager
+    setattr(chrome_manager, "ChromeDriverManager", DummyChromeDriverManager)
+    setattr(webdriver_manager, "chrome", chrome_manager)
     sys.modules["webdriver_manager"] = webdriver_manager
     sys.modules["webdriver_manager.chrome"] = chrome_manager
 
