@@ -930,7 +930,10 @@ button.danger:hover {
   display: none;
 }
 .modal {
+  position: fixed;
+  inset: 0;
   z-index: 901;
+  pointer-events: none;
 }
 
 /* backdrop */
@@ -944,6 +947,7 @@ button.danger:hover {
   );
   box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.25);
   z-index: 900;
+  pointer-events: auto;
 }
 
 /* Optional blur treatment: add .backdrop-blur to <body> to re-enable GPU blur */
@@ -956,6 +960,7 @@ body.backdrop-blur .modal-backdrop {
 /* modal box */
 .modal-box {
   position: fixed;
+  pointer-events: auto;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
