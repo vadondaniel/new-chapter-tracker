@@ -13,7 +13,7 @@ from scraper_utils import needs_update
 
 from db_store import DEFAULT_UPDATE_FREQUENCY
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 update_in_progress = False
 socketio = None  # Set externally
@@ -92,7 +92,7 @@ def load_scraper_plugins():
         try:
             module = importlib.import_module(f"{package.__name__}.{name}")
         except Exception as exc:
-            logging.exception(
+            logger.exception(
                 "Failed to import scraper plugin %s: %s", name, exc)
             continue
 
@@ -102,7 +102,7 @@ def load_scraper_plugins():
         scrape_func = getattr(module, "scrape", None)
         domains = getattr(module, "DOMAINS", [])
         if not callable(scrape_func) or not domains:
-            logging.warning(
+            logger.warning(
                 "Plugin %s missing scrape entry point or domains", name)
             continue
 
@@ -134,7 +134,7 @@ def load_scraper_plugins():
             }
 
     if not registry:
-        logging.warning("No scraper plugins were loaded.")
+        logger.warning("No scraper plugins were loaded.")
     return registry
 
 
@@ -192,7 +192,7 @@ def process_link(link, entry, force_update=False):
     try:
         result = scrape_website(link)
     except Exception as exc:
-        logging.error("Error scraping %s: %s", link["url"], exc)
+        logger.error("Error scraping %s: %s", link["url"], exc)
         return None, {link["url"]: {"error": str(exc)}}
     chapter, timestamp, success, error, chapter_url = normalize_scrape_result(result)
     if success:
@@ -282,7 +282,7 @@ def scrape_all_links(links, previous_data, force_update=False, category=None):
             failures.update(failure)
 
     update_in_progress = False
-    logging.info("Scraping all links completed.")
+    logger.info("Scraping all links completed.")
     return new_data, failures
 
 # --------------------- Pipeline ---------------------

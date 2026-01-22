@@ -19,14 +19,25 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from scraping import process_link, scrape_all_links, category_room_name
 from db_store import ChapterDatabase, DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY
 
-logging.basicConfig(level=logging.INFO)
-
 # --------------------- Data Directory ---------------------
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
+LOG_FILE = os.path.join(DATA_DIR, "app.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
 DB_PATH = Path(DATA_DIR) / "chapters.db"
 db = ChapterDatabase(DB_PATH)
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.update(
@@ -213,7 +224,7 @@ def get_link_metadata(payload, existing=None):
 
 def run_update_job(category="main", force_update=False):
     with app.app_context():
-        logging.info(
+        logger.info(
             f"Starting scheduled update for {category} (force={force_update})...")
         try:
             links = db.get_links(category)
@@ -223,7 +234,7 @@ def run_update_job(category="main", force_update=False):
             )
             db.merge_scraped(new_data)
             db.record_failures(failures)
-            logging.info(f"Scheduled update for {category} completed.")
+            logger.info(f"Scheduled update for {category} completed.")
         finally:
             db.set_category_last_checked(category, datetime.now().isoformat())
             if socketio:
@@ -278,7 +289,7 @@ def schedule_updates(force=False):
                 replace_existing=True,
                 kwargs={"category": name},
             )
-            logging.info(
+            logger.info(
                 "Scheduled '%s' to run next at %s (interval=%dh)",
                 name,
                 next_run_time.isoformat(),
@@ -363,7 +374,7 @@ def index(category=None):
         nav_categories, update_type, len(view_data["differences"])
     )
 
-    logging.info(
+    logger.info(
         f"Last full update ({update_type}): {view_data['last_full_update']}")
     return render_template(
         "index.html",
@@ -720,7 +731,7 @@ def supported_sites():
     try:
         sites = scraping.get_supported_sites()
     except Exception as exc:
-        logging.error("Failed to load supported sites: %s", exc)
+        logger.error("Failed to load supported sites: %s", exc)
         return jsonify({"status": "error"}), 500
     return jsonify(sites)
 
@@ -920,7 +931,7 @@ def set_run_on_startup(enabled=True):
         winreg.CloseKey(key)
         return True
     except Exception as e:
-        logging.error(f"Failed to update startup registry: {e}")
+        logger.error(f"Failed to update startup registry: {e}")
         return False
 
 def is_run_on_startup():
@@ -938,7 +949,7 @@ def is_run_on_startup():
     except FileNotFoundError:
         return False
     except Exception as e:
-        logging.error(f"Failed to read startup registry: {e}")
+        logger.error(f"Failed to read startup registry: {e}")
         return False
 
 # --------------------- Tray Icon ---------------------
@@ -948,6 +959,10 @@ def setup_tray(host, port):
         # Use localhost if host is 0.0.0.0
         display_host = "127.0.0.1" if host == "0.0.0.0" else host
         webbrowser.open(f"http://{display_host}:{port}")
+
+    def on_open_log(icon, item):
+        if os.path.exists(LOG_FILE):
+            os.startfile(LOG_FILE)
 
     def on_exit(icon, item):
         icon.stop()
@@ -962,12 +977,13 @@ def setup_tray(host, port):
     try:
         image = Image.open(icon_path)
     except Exception as e:
-        logging.error(f"Failed to load tray icon: {e}")
+        logger.error(f"Failed to load tray icon: {e}")
         # Fallback to a simple colored square if favicon is missing
         image = Image.new('RGB', (64, 64), color=(60, 120, 216))
 
     menu = pystray.Menu(
         pystray.MenuItem("Open App", on_open, default=True),
+        pystray.MenuItem("Open Log", on_open_log),
         pystray.MenuItem("Start on Startup", toggle_startup, checked=lambda item: is_run_on_startup()),
         pystray.MenuItem("Exit", on_exit)
     )
