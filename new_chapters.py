@@ -1,5 +1,6 @@
 import scraping
 import os
+import sys
 import math
 import logging
 import sqlite3
@@ -890,6 +891,56 @@ def set_cache_headers(response):
     return response
 
 
+# --------------------- Startup Logic ---------------------
+
+def set_run_on_startup(enabled=True):
+    if sys.platform != 'win32':
+        return False
+    
+    import winreg
+    key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    app_name = "ChapterTracker"
+    
+    if getattr(sys, 'frozen', False):
+        cmd = f'"{sys.executable}"'
+    else:
+        # Use pythonw.exe if available to run without console window on startup
+        python_exe = sys.executable.replace("python.exe", "pythonw.exe")
+        cmd = f'"{python_exe}" "{os.path.abspath(__file__)}"'
+    
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE)
+        if enabled:
+            winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, cmd)
+        else:
+            try:
+                winreg.DeleteValue(key, app_name)
+            except FileNotFoundError:
+                pass
+        winreg.CloseKey(key)
+        return True
+    except Exception as e:
+        logging.error(f"Failed to update startup registry: {e}")
+        return False
+
+def is_run_on_startup():
+    if sys.platform != 'win32':
+        return False
+        
+    import winreg
+    key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    app_name = "ChapterTracker"
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
+        winreg.QueryValueEx(key, app_name)
+        winreg.CloseKey(key)
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        logging.error(f"Failed to read startup registry: {e}")
+        return False
+
 # --------------------- Tray Icon ---------------------
 
 def setup_tray(host, port):
@@ -902,6 +953,11 @@ def setup_tray(host, port):
         icon.stop()
         os._exit(0)
 
+    def toggle_startup(icon, item):
+        new_state = not is_run_on_startup()
+        if set_run_on_startup(new_state):
+            db.update_setting("start_on_startup", "1" if new_state else "0")
+
     icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "favicon.ico")
     try:
         image = Image.open(icon_path)
@@ -912,6 +968,7 @@ def setup_tray(host, port):
 
     menu = pystray.Menu(
         pystray.MenuItem("Open App", on_open, default=True),
+        pystray.MenuItem("Start on Startup", toggle_startup, checked=lambda item: is_run_on_startup()),
         pystray.MenuItem("Exit", on_exit)
     )
 

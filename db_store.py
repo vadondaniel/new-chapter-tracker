@@ -128,7 +128,8 @@ class ChapterDatabase:
             "password_protected": "0",
             "password_hash": "",
             "share_local": "0",
-            "port": "555"
+            "port": "555",
+            "start_on_startup": "0"
         }
         for key, val in defaults.items():
             conn.execute(
