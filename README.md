@@ -26,6 +26,11 @@ Chapter Tracker keeps tabs on your manga and novel feeds, refreshing them automa
    python new_chapters.py
    ```
 
+   Alternatively, use the provided background launcher (Windows):
+   - Double-click `start_app.bat` to run the app in the background (no console window).
+   - Use `stop_app.bat` to stop the background process.
+   - You can also manage the app via the system tray icon.
+
    Then open `http://localhost:555` in your browser.
 
 The first launch seeds `data/chapters.db` with the `main` category. Use the Category Manager to add more (manga, novel, etc.); once they exist, scheduling logic refreshes each category when its stored interval elapses.
