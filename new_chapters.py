@@ -4,13 +4,16 @@ import math
 import logging
 import sqlite3
 import atexit
+import threading
+import webbrowser
+import pystray
+from PIL import Image
 from functools import wraps
 from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session, make_response
 from flask_socketio import SocketIO, join_room, leave_room
 from apscheduler.schedulers.background import BackgroundScheduler
-from threading import Lock
 
 from scraping import process_link, scrape_all_links, category_room_name
 from db_store import ChapterDatabase, DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY
@@ -36,7 +39,7 @@ socketio = SocketIO(app)
 update_in_progress = False
 ASSET_VERSION = os.environ.get("CHAPTER_TRACKER_ASSET_VERSION", "1")
 _scheduler = None
-_scheduler_lock = Lock()
+_scheduler_lock = threading.Lock()
 _scheduler_started = False
 client_rooms = {}
 
@@ -887,6 +890,35 @@ def set_cache_headers(response):
     return response
 
 
+# --------------------- Tray Icon ---------------------
+
+def setup_tray(host, port):
+    def on_open(icon, item):
+        # Use localhost if host is 0.0.0.0
+        display_host = "127.0.0.1" if host == "0.0.0.0" else host
+        webbrowser.open(f"http://{display_host}:{port}")
+
+    def on_exit(icon, item):
+        icon.stop()
+        os._exit(0)
+
+    icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "favicon.ico")
+    try:
+        image = Image.open(icon_path)
+    except Exception as e:
+        logging.error(f"Failed to load tray icon: {e}")
+        # Fallback to a simple colored square if favicon is missing
+        image = Image.new('RGB', (64, 64), color=(60, 120, 216))
+
+    menu = pystray.Menu(
+        pystray.MenuItem("Open App", on_open, default=True),
+        pystray.MenuItem("Exit", on_exit)
+    )
+
+    icon = pystray.Icon("chapter_tracker", image, "Chapter Tracker", menu)
+    icon.run()
+
+
 # --------------------- Startup ---------------------
 if __name__ == "__main__":
     schedule_updates()
@@ -898,5 +930,8 @@ if __name__ == "__main__":
     except Exception:
         host = "127.0.0.1"
         port = 555
+
+    # Start tray icon in a background thread
+    threading.Thread(target=setup_tray, args=(host, port), daemon=True).start()
 
     app.run(host=host, debug=False, port=port)
