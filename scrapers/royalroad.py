@@ -1,7 +1,7 @@
 import datetime
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 DOMAINS = ["royalroad.com"]
 SUPPORTS_FREE_TOGGLE = False
@@ -22,22 +22,30 @@ def scrape(url, free_only=False):
     response = requests.get(api_url).content
     soup = BeautifulSoup(response, "xml")
     channel = soup.find("channel")
-    if not channel:
+    if not isinstance(channel, Tag):
         return "No channel found", timestamp, False, "No channel found"
-    
+
     channel_title_tag = channel.find("title")
-    channel_title = channel_title_tag.get_text(strip=True) if channel_title_tag else ""
-    
+    channel_title = (
+        channel_title_tag.get_text(strip=True)
+        if isinstance(channel_title_tag, Tag)
+        else ""
+    )
+
     latest_item = soup.find("item")
-    if latest_item:
+    if isinstance(latest_item, Tag):
         title_tag = latest_item.find("title")
-        chapter_title = title_tag.get_text(strip=True) if title_tag else "Unknown Chapter"
-        
+        chapter_title = (
+            title_tag.get_text(strip=True)
+            if isinstance(title_tag, Tag)
+            else "Unknown Chapter"
+        )
+
         if channel_title and chapter_title.startswith(channel_title):
             chapter_title = chapter_title[len(channel_title):].strip(" -")
-            
+
         pub_date_tag = latest_item.find("pubDate")
-        if pub_date_tag:
+        if isinstance(pub_date_tag, Tag):
             pub_date = pub_date_tag.get_text(strip=True)
             try:
                 timestamp = datetime.datetime.strptime(
@@ -45,9 +53,11 @@ def scrape(url, free_only=False):
                 ).strftime("%Y/%m/%d")
             except ValueError:
                 pass
-        
+
         link_tag = latest_item.find("link")
-        chapter_url = link_tag.get_text(strip=True) if link_tag else None
+        chapter_url = (
+            link_tag.get_text(strip=True) if isinstance(link_tag, Tag) else None
+        )
         
         success = True
         return {
