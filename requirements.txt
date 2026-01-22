@@ -4,3 +4,10 @@ APScheduler
 selenium
 webdriver-manager
 cloudscraper
+requests
+beautifulsoup4
+lxml
+Pillow
+pystray
+python-dateutil
+pytest
