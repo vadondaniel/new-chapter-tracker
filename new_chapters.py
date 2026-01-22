@@ -1,23 +1,22 @@
-import scraping
-import os
-import sys
-import math
-import logging
-import sqlite3
 import atexit
+import logging
+import math
+import os
+import sqlite3
+import sys
 import threading
 import webbrowser
-import pystray
-from PIL import Image
-from functools import wraps
 from datetime import datetime, timedelta
+from functools import wraps
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session, make_response
-from flask_socketio import SocketIO, join_room, leave_room
-from apscheduler.schedulers.background import BackgroundScheduler
 
-from scraping import process_link, scrape_all_links, category_room_name
-from db_store import ChapterDatabase, DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, jsonify, make_response, redirect, render_template, request, send_from_directory, session, url_for
+from flask_socketio import SocketIO, join_room, leave_room
+
+import scraping
+from db_store import DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY, ChapterDatabase
+from scraping import category_room_name, process_link, scrape_all_links
 
 # --------------------- Data Directory ---------------------
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -955,6 +954,9 @@ def is_run_on_startup():
 # --------------------- Tray Icon ---------------------
 
 def setup_tray(host, port):
+    import pystray
+    from PIL import Image
+
     def on_open(icon, item):
         # Use localhost if host is 0.0.0.0
         display_host = "127.0.0.1" if host == "0.0.0.0" else host
