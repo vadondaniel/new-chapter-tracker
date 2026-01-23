@@ -2,6 +2,8 @@ import importlib
 import pkgutil
 import logging
 import datetime
+import threading
+from contextlib import contextmanager
 
 import scrapers
 from selenium import webdriver
@@ -28,6 +30,8 @@ def category_room_name(category=None):
 
 class BrowserManager:
     _instance = None
+    _lock = threading.Lock()
+    _usage_lock = threading.Lock()
 
     def __init__(self):
         options = Options()
@@ -70,15 +74,27 @@ class BrowserManager:
 
     @classmethod
     def get_driver(cls):
-        if cls._instance is None:
-            cls._instance = BrowserManager()
-        return cls._instance.driver
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = BrowserManager()
+            return cls._instance.driver
+
+    @classmethod
+    @contextmanager
+    def locked_driver(cls):
+        """Provides a thread-safe way to use the shared driver."""
+        with cls._usage_lock:
+            yield cls.get_driver()
 
     @classmethod
     def quit_driver(cls):
-        if cls._instance:
-            cls._instance.driver.quit()
-            cls._instance = None
+        with cls._lock:
+            if cls._instance:
+                try:
+                    cls._instance.driver.quit()
+                except Exception:
+                    pass
+                cls._instance = None
 
 # --------------------- Scraper Plugins ---------------------
 

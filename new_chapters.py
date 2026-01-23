@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 from functools import wraps
 from pathlib import Path
 
+# Ensure we are in the correct directory, especially when running from startup
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, jsonify, make_response, redirect, render_template, request, send_from_directory, session, url_for
 from flask_socketio import SocketIO, join_room, leave_room
@@ -249,16 +252,27 @@ def schedule_updates(force=False):
     global _scheduler, _scheduler_started
     with _scheduler_lock:
         if _scheduler is None:
-            _scheduler = BackgroundScheduler(job_defaults={"max_instances": 1})
-        elif force and _scheduler_started:
-            _scheduler.remove_all_jobs()
-        elif _scheduler_started:
-            # Scheduler already configured and running; nothing to do.
+            # misfire_grace_time=None allows jobs to run even if they missed their window (e.g. computer was asleep)
+            _scheduler = BackgroundScheduler(job_defaults={
+                "max_instances": 1,
+                "misfire_grace_time": 3600  # 1 hour grace period
+            })
+        
+        if force and _scheduler_started:
+            # Instead of removing all, we'll just update what's needed
+            pass
+        elif _scheduler_started and not force:
             return _scheduler
 
         now = datetime.now()
+        existing_job_ids = {job.id for job in _scheduler.get_jobs()}
+        current_category_ids = set()
+
         for category in db.get_categories():
             name = category["name"]
+            job_id = f"update_{name}"
+            current_category_ids.add(job_id)
+            
             interval = category.get("update_interval_hours") or 1
             try:
                 interval_hours = max(1, int(interval))
@@ -284,7 +298,7 @@ def schedule_updates(force=False):
                 "interval",
                 hours=interval_hours,
                 next_run_time=next_run_time,
-                id=f"update_{name}",
+                id=job_id,
                 replace_existing=True,
                 kwargs={"category": name},
             )
@@ -294,6 +308,12 @@ def schedule_updates(force=False):
                 next_run_time.isoformat(),
                 interval_hours,
             )
+
+        # Remove jobs for categories that no longer exist
+        for old_id in existing_job_ids:
+            if old_id.startswith("update_") and old_id not in current_category_ids:
+                _scheduler.remove_job(old_id)
+                logger.info("Removed scheduled job for deleted category: %s", old_id)
 
         if not _scheduler_started:
             _scheduler.start()
