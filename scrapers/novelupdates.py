@@ -12,7 +12,15 @@ SCRAPER_NAME = "Novel Updates"
 def scrape(url, free_only=False):
     # use cloudscraper to bypass Cloudflare
     scraper = cloudscraper.create_scraper()
-    response = scraper.get(url)
+    try:
+        response = scraper.get(url, timeout=15)
+    except Exception:
+        return (
+            "Connection error",
+            datetime.datetime.now().strftime("%Y/%m/%d"),
+            False,
+            None,
+        )
 
     soup = BeautifulSoup(response.content, "html.parser")
     row = soup.select_one("#myTable tbody tr")

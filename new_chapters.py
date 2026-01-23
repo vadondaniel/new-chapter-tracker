@@ -19,7 +19,7 @@ from flask_socketio import SocketIO, join_room, leave_room
 
 import scraping
 from db_store import DEFAULT_FREE_ONLY, DEFAULT_UPDATE_FREQUENCY, ChapterDatabase
-from scraping import category_room_name, process_link, scrape_all_links
+from scraping import category_room_name, process_link, scrape_all_links, is_update_in_progress
 
 # --------------------- Data Directory ---------------------
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -379,7 +379,7 @@ def index(category=None):
             "index.html",
             differences={},
             same_data={},
-            update_in_progress=scraping.update_in_progress,
+            update_in_progress=is_update_in_progress(update_type),
             last_full_update=None,
             current_category=update_type,
             current_nav_info=get_current_nav_info([], update_type, 0),
@@ -399,7 +399,7 @@ def index(category=None):
         "index.html",
         differences=view_data["differences"],
         same_data=view_data["same_data"],
-        update_in_progress=scraping.update_in_progress,
+        update_in_progress=is_update_in_progress(update_type),
         last_full_update=view_data["last_full_update"],
         current_category=update_type,
         current_nav_info=current_nav,

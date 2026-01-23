@@ -19,7 +19,11 @@ def scrape(url, free_only=False):
         error = "Invalid RoyalRoad URL"
         return "Invalid RoyalRoad URL", timestamp, False, error
 
-    response = requests.get(api_url).content
+    try:
+        response = requests.get(api_url, timeout=15).content
+    except requests.RequestException as e:
+        return "Connection error", timestamp, False, str(e)
+
     soup = BeautifulSoup(response, "xml")
     channel = soup.find("channel")
     if not isinstance(channel, Tag):

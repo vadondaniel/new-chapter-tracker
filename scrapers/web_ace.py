@@ -36,7 +36,7 @@ def scrape(url, free_only=False):
 
     try:
         response = requests.get(
-            rss_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+            rss_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "xml")
         latest_item = soup.find("item")

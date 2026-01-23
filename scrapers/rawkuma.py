@@ -15,7 +15,7 @@ SCRAPER_NOTES = [""]
 def scrape(url, free_only=False):
     try:
         # Extract manga_id from URL by fetching main page
-        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
         if resp.status_code != 200:
             return "Failed to fetch main page", datetime.datetime.now().strftime("%Y/%m/%d"), False, None
 
@@ -34,7 +34,7 @@ def scrape(url, free_only=False):
         # Call AJAX endpoint to get chapters
         ajax_url = "https://rawkuma.net/wp-admin/admin-ajax.php"
         params = {"action": "chapter_list", "manga_id": manga_id, "page": "1"}
-        ajax_resp = requests.get(ajax_url, params=params, headers={"User-Agent": "Mozilla/5.0"})
+        ajax_resp = requests.get(ajax_url, params=params, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
 
         if ajax_resp.status_code != 200:
             return "Failed to fetch chapter list", datetime.datetime.now().strftime("%Y/%m/%d"), False, None

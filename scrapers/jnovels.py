@@ -12,7 +12,15 @@ SCRAPER_NOTES = ["Supports search query URLs"]
 
 
 def scrape(url, free_only=False):
-    response = requests.get(url)
+    try:
+        response = requests.get(url, timeout=15)
+    except requests.RequestException:
+        return (
+            "Connection error",
+            datetime.datetime.now().strftime("%Y/%m/%d"),
+            False,
+            None,
+        )
     soup = BeautifulSoup(response.content, "html.parser")
     posts = soup.select("div.post-container")
 

@@ -17,8 +17,16 @@ from db_store import DEFAULT_UPDATE_FREQUENCY
 
 logger = logging.getLogger(__name__)
 
-update_in_progress = False
+updating_categories = set()
+_updating_lock = threading.Lock()
 socketio = None  # Set externally
+
+
+def is_update_in_progress(category=None):
+    with _updating_lock:
+        if category:
+            return category in updating_categories
+        return len(updating_categories) > 0
 
 
 def category_room_name(category=None):
@@ -71,6 +79,8 @@ class BrowserManager:
             service=ChromeService(ChromeDriverManager().install()),
             options=options
         )
+        self.driver.set_page_load_timeout(30)
+        self.driver.set_script_timeout(30)
 
     @classmethod
     def get_driver(cls):
@@ -268,8 +278,10 @@ def normalize_scrape_result(result):
 
 
 def scrape_all_links(links, previous_data, force_update=False, category=None):
-    global update_in_progress
-    update_in_progress = True
+    category_name = (category or "main")
+    with _updating_lock:
+        updating_categories.add(category_name)
+    
     new_data = {}
     failures = {}
     total_links = len(links)
@@ -297,7 +309,8 @@ def scrape_all_links(links, previous_data, force_update=False, category=None):
         if failure:
             failures.update(failure)
 
-    update_in_progress = False
+    with _updating_lock:
+        updating_categories.discard(category_name)
     logger.info("Scraping all links completed.")
     return new_data, failures
 

@@ -11,10 +11,14 @@ SCRAPER_NAME = "Kemono"
 def scrape(url, free_only=False):
     timestamp = datetime.datetime.now().strftime("%Y/%m/%d")
     api_url = url.replace("kemono.cr", "kemono.cr/api/v1") + "/posts"
-    response = requests.get(
-        api_url, headers={"User-Agent": "Mozilla/5.0", "Accept": "text/css"}
-    )
-    data = response.json()
+    try:
+        response = requests.get(
+            api_url, headers={"User-Agent": "Mozilla/5.0", "Accept": "text/css"},
+            timeout=15
+        )
+        data = response.json()
+    except (requests.RequestException, ValueError):
+        return "Connection error", timestamp, False, "Failed to fetch or parse API"
     if data and len(data) > 0:
         latest_post = data[0]
         latest_chapter = latest_post["title"]

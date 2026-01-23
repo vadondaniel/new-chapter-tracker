@@ -31,7 +31,7 @@ def scrape(url, free_only=False):
     }
 
     try:
-        page = requests.get(url, headers=HEADERS)
+        page = requests.get(url, headers=HEADERS, timeout=15)
         soup = BeautifulSoup(page.text, "html.parser")
         rss_link = soup.find("link", rel="alternate",
                              type="application/rss+xml")
