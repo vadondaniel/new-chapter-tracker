@@ -37,10 +37,11 @@ def scrape(url, free_only=False):
     latest_item = soup.find("item")
     if latest_item:
         title = latest_item.find("title").get_text(strip=True)
+        link = latest_item.find("guid").get_text(strip=True)
         pub_date = latest_item.find("pubDate").get_text(strip=True)
         timestamp = datetime.datetime.strptime(
             pub_date, "%a, %d %b %Y %H:%M:%S %z"
         ).strftime("%Y/%m/%d")
-        return title, timestamp, True, None
+        return title, timestamp, True, None, link
 
     return "No new torrent found", timestamp, False, "No RSS item found"

@@ -37,9 +37,10 @@ def scrape(url, free_only=False):
     time_tag = latest_post.select_one("time.updated")
 
     chapter_text = title_tag.text.strip() if title_tag else "No title found"
+    chapter_url = title_tag['href'] if title_tag else None
     timestamp = (
         parse_timestamp(time_tag["datetime"]) if time_tag else datetime.datetime.now(
         ).strftime("%Y/%m/%d")
     )
 
-    return chapter_text, timestamp, True, None
+    return chapter_text, timestamp, True, None, chapter_url

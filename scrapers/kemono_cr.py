@@ -23,7 +23,9 @@ def scrape(url, free_only=False):
         latest_post = data[0]
         latest_chapter = latest_post["title"]
         timestamp = parser.parse(latest_post["published"]).strftime("%Y/%m/%d")
-        return latest_chapter, timestamp, True, None
+        service, user_id, post_id = latest_post.get("service"), latest_post.get("user"), latest_post.get("id")
+        post_url = f"https://kemono.cr/{service}/user/{user_id}/post/{post_id}"
+        return latest_chapter, timestamp, True, None, post_url
     return (
         "No new post found",
         timestamp,
